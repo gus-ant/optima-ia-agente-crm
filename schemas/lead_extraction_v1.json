@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LeadExtractionSchema",
+  "description": "Schema de extração de dados do lead pelo agente Lara. Versão 1.0",
+  "type": "object",
+  "required": ["lead", "evento", "comercial", "pipeline_stage", "pronto_transbordo"],
+  "properties": {
+    "lead": {
+      "type": "object",
+      "required": ["whatsapp"],
+      "properties": {
+        "nome":          { "type": ["string", "null"] },
+        "whatsapp":      { "type": "string", "pattern": "^\\d{10,15}$" },
+        "instagram":     { "type": ["string", "null"] },
+        "cidade":        { "type": ["string", "null"] },
+        "canal_origem":  {
+          "type": ["string", "null"],
+          "enum": ["instagram", "indicacao", "google", "trafego", "evento", "outro", null]
+        }
+      }
+    },
+    "evento": {
+      "type": "object",
+      "properties": {
+        "tipo": {
+          "type": ["string", "null"],
+          "enum": ["casamento", "aniversario", "cha", "corporativo", "outro", null]
+        },
+        "data":           { "type": ["string", "null"], "format": "date" },
+        "local_nome":     { "type": ["string", "null"] },
+        "local_cidade":   { "type": ["string", "null"] },
+        "num_convidados": { "type": ["integer", "null"], "minimum": 1 },
+        "espaco_status":  { "type": ["string", "null"], "enum": ["fechado", "aberto", null] },
+        "tem_mobilia":    { "type": ["boolean", "null"] },
+        "estilo":         { "type": ["string", "null"] },
+        "paleta_cores":   { "type": ["string", "null"] },
+        "tipo_flores":    {
+          "type": ["string", "null"],
+          "enum": ["vivas", "permanentes", "mistas", null]
+        },
+        "referencias":    {
+          "type": "array",
+          "items": { "type": "string", "format": "uri" }
+        }
+      }
+    },
+    "comercial": {
+      "type": "object",
+      "properties": {
+        "faixa_investimento":  { "type": ["string", "null"] },
+        "urgencia":            {
+          "type": ["string", "null"],
+          "enum": ["alta", "media", "baixa", null]
+        },
+        "avaliou_concorrencia": { "type": ["boolean", "null"] }
+      }
+    },
+    "pipeline_stage": {
+      "type": "string",
+      "enum": ["novo_lead", "em_qualificacao", "dados_coletados", "aguardando_fotos", "pronto_orcamento"]
+    },
+    "pronto_transbordo": { "type": "boolean" }
+  }
+}

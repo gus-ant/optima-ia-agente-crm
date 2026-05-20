@@ -1,0 +1,69 @@
+version: "3.9"
+
+services:
+  # --- Agente Lara (FastAPI + LangGraph) ---
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: optima-agent
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8000}:8000"
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - optima-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # --- Redis (estado de sessões) ---
+  redis:
+    image: redis:7-alpine
+    container_name: optima-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - optima-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- N8N (apenas triggers simples: follow-up cron, fallback webhook) ---
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: optima-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=${N8N_WEBHOOK_URL:-http://localhost:5678}
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n_flows:/home/node/.n8n/workflows-backup
+    networks:
+      - optima-net
+
+networks:
+  optima-net:
+    driver: bridge
+
+volumes:
+  redis_data:
+  n8n_data:

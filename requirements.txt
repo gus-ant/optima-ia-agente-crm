@@ -1,0 +1,36 @@
+# Óptima IA — Dependências Python
+# Instalar com: pip install -r requirements.txt
+
+# --- Framework Web ---
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+
+# --- LangChain + LangGraph ---
+langchain>=0.2.0
+langchain-core>=0.2.0
+langchain-openai>=0.1.8
+langchain-anthropic>=0.1.15   # opcional — habilitar se usar Claude
+langgraph>=0.1.5
+langgraph-checkpoint>=1.0.2
+
+# --- HTTP ---
+httpx>=0.27.0
+
+# --- Persistência ---
+redis[asyncio]>=5.0.0
+psycopg2-binary>=2.9.9        # PostgreSQL — para histórico de longo prazo
+sqlalchemy>=2.0.0
+
+# --- Validação ---
+pydantic>=2.7.0
+pydantic-settings>=2.3.0
+
+# --- Utilitários ---
+python-dotenv>=1.0.1
+structlog>=24.2.0             # logging estruturado
+
+# --- Dev / Testes ---
+pytest>=8.2.0
+pytest-asyncio>=0.23.7
+pytest-httpx>=0.30.0
+httpx>=0.27.0
