@@ -15,6 +15,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      db:
+        condition: service_healthy
     networks:
       - optima-net
     healthcheck:
@@ -23,6 +25,25 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+
+  # --- Banco de Dados Relacional (CRM Próprio Local) ---
+  db:
+    image: postgres:15-alpine
+    container_name: optima-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: optimacrm
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - optima-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d optimacrm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # --- Redis (estado de sessões) ---
   redis:
@@ -67,3 +88,5 @@ networks:
 volumes:
   redis_data:
   n8n_data:
+  postgres_data:
+

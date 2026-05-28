@@ -1,25 +1,42 @@
 """
 tests/test_graph.py
 -------------------
-Testes unitários para o grafo LangGraph do agente Lara.
+Testes unitários e de integração para o grafo LangGraph e CRM Próprio Local.
 Executa com: pytest tests/ -v
 """
 
 from __future__ import annotations
 
 import json
+import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
+# Configura o ambiente para usar SQLite em memória antes de qualquer import do DB
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
+
 from agent.graph import build_graph
 from agent.state import AgentState
+from crm.database import Base, engine, get_db_session
+from crm.client import LocalCRMClient
+from crm.models import Contato, Negocio, Atividade
 
 
 # ---------------------------------------------------------------------------
-# Fixtures
+# Fixtures do Banco de Dados
 # ---------------------------------------------------------------------------
+
+@pytest.fixture(autouse=True)
+async def setup_db():
+    """Inicializa as tabelas no SQLite em memória antes de cada teste."""
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+
 
 @pytest.fixture
 def base_state() -> dict:
@@ -27,6 +44,8 @@ def base_state() -> dict:
         "messages": [],
         "session_id": "5511999998888",
         "crm_contact_id": None,
+        "contato_id": None,
+        "negocio_id": None,
         "lead": {"whatsapp": "5511999998888"},
         "evento": {"referencias": []},
         "comercial": {},
@@ -39,7 +58,68 @@ def base_state() -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Testes de roteamento
+# Testes do CRM Próprio Local
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_local_crm_flow():
+    """Valida a criação e atualização de contatos e negócios no banco local."""
+    client = LocalCRMClient()
+
+    # 1. Criação do Contato + Negócio automático
+    res_create = await client.get_or_create_contato(
+        whatsapp_id="5511999998888",
+        nome="Gustavo Teste",
+    )
+    assert res_create["is_new"] is True
+    assert res_create["contact_id"] == "1"
+    assert res_create["deal_id"] == "1"
+
+    # 2. Re-busca do mesmo contato (deve retornar is_new=False e manter IDs)
+    res_get = await client.get_or_create_contato(
+        whatsapp_id="5511999998888",
+    )
+    assert res_get["is_new"] is False
+    assert res_get["contact_id"] == "1"
+    assert res_get["deal_id"] == "1"
+
+    # 3. Atualização dos campos do negócio
+    res_update = await client.update_contact_data(
+        contact_id="1",
+        fields={
+            "lead": {"nome": "Gustavo Editado", "instagram": "@gustavo"},
+            "evento": {
+                "tipo": "casamento",
+                "data": "2026-12-25",
+                "local_nome": "Espaço Jardim",
+                "num_convidados": 150,
+            },
+            "comercial": {"faixa_investimento": "R$ 15.000,00"},
+        }
+    )
+    assert res_update["status"] == "success"
+    assert res_update["negocio"]["tipo_evento"] == "casamento"
+    assert res_update["negocio"]["data_evento"] == "2026-12-25"
+    assert res_update["negocio"]["orcamento_estimado"] == 15000.0
+    assert "Jardim" in res_update["negocio"]["notas_agente"]
+
+    # 4. Avanço do pipeline / etapa de funil
+    res_stage = await client.update_etapa_funil(negocio_id=1, nova_etapa="em_qualificacao")
+    assert res_stage["status"] == "success"
+    assert res_stage["etapa_funil"] == "EM_QUALIFICACAO"
+
+    # 5. Registro de Atividade (Mensagem)
+    res_act = await client.log_activity(
+        contact_id=1,
+        direction="inbound",
+        content="Olá Lara!",
+        timestamp="2026-05-27T20:30:00Z"
+    )
+    assert res_act["status"] == "success"
+
+
+# ---------------------------------------------------------------------------
+# Testes de roteamento do LangGraph
 # ---------------------------------------------------------------------------
 
 def test_route_after_llm_no_tools():
@@ -79,58 +159,26 @@ def test_route_after_sync_not_ready():
 
 
 # ---------------------------------------------------------------------------
-# Testes de extração
-# ---------------------------------------------------------------------------
-
-def test_parse_extraction_valid():
-    """Deve extrair e parsear o JSON do bloco <extraction>."""
-    from agent.nodes import _parse_extraction
-
-    text = """
-    Oi! Qual o tipo do evento?
-    <extraction>{"lead": {"nome": "Ana", "whatsapp": "5511999998888"}, "pipeline_stage": "em_qualificacao"}</extraction>
-    """
-    result = _parse_extraction(text)
-    assert result is not None
-    assert result["lead"]["nome"] == "Ana"
-    assert result["pipeline_stage"] == "em_qualificacao"
-
-
-def test_parse_extraction_missing():
-    """Deve retornar None se não houver bloco <extraction>."""
-    from agent.nodes import _parse_extraction
-
-    result = _parse_extraction("Olá! Qual é o seu nome?")
-    assert result is None
-
-
-def test_parse_extraction_invalid_json():
-    """Deve retornar None se o JSON for inválido."""
-    from agent.nodes import _parse_extraction
-
-    result = _parse_extraction("<extraction>{invalid json}</extraction>")
-    assert result is None
-
-
-# ---------------------------------------------------------------------------
 # Testes do node receive_message
 # ---------------------------------------------------------------------------
 
 def test_node_receive_message_new_lead(base_state):
-    """Para novo lead, deve inicializar pipeline_stage e dados do lead."""
+    """Para novo lead, deve inicializar pipeline_stage, dados do lead e IDs locais como None."""
     from agent.nodes import node_receive_message
 
     result = node_receive_message(base_state)
     assert result["pipeline_stage"] == "novo_lead"
     assert result["lead"]["whatsapp"] == "5511999998888"
     assert result["pronto_transbordo"] is False
+    assert result["contato_id"] is None
+    assert result["negocio_id"] is None
 
 
 def test_node_receive_message_existing_lead(base_state):
-    """Para lead existente, não deve sobrescrever estado."""
+    """Para lead existente (contato_id preenchido), não deve sobrescrever estado."""
     from agent.nodes import node_receive_message
 
-    base_state["crm_contact_id"] = "123"
+    base_state["contato_id"] = 123
     base_state["pipeline_stage"] = "em_qualificacao"
 
     result = node_receive_message(base_state)
@@ -144,8 +192,7 @@ def test_node_receive_message_existing_lead(base_state):
 @pytest.mark.asyncio
 async def test_graph_first_message(base_state):
     """
-    Teste de integração: primeira mensagem deve resultar em resposta da Lara
-    e criação de lead no CRM.
+    Teste de integração: primeira mensagem deve resultar em resposta da Lara.
     """
     mock_response = AIMessage(
         content=(

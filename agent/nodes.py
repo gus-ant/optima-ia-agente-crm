@@ -47,7 +47,7 @@ def node_receive_message(state: AgentState) -> dict[str, Any]:
     Ponto de entrada: normaliza a mensagem recebida e garante que o lead
     já existe no CRM. Cria contato se for a primeira mensagem.
     """
-    is_new_lead = not state.get("crm_contact_id")
+    is_new_lead = not state.get("crm_contact_id") and not state.get("contato_id")
 
     if is_new_lead:
         logger.info("New lead from %s — creating CRM contact", state["session_id"])
@@ -60,6 +60,8 @@ def node_receive_message(state: AgentState) -> dict[str, Any]:
             "lead": {"whatsapp": state["session_id"]},
             "evento": {"referencias": []},
             "comercial": {},
+            "contato_id": None,
+            "negocio_id": None,
         }
 
     return {}  # estado existente mantido
@@ -116,10 +118,10 @@ def node_tool_executor(state: AgentState) -> dict[str, Any]:
     tool_node = ToolNode(ALL_TOOLS)
     result = tool_node.invoke(state)
 
-    # Captura contact_id se a tool create_crm_contact foi executada
-    crm_id = _extract_crm_id_from_tool_messages(result.get("messages", []))
-    if crm_id:
-        return {**result, "crm_contact_id": crm_id}
+    # Captura os IDs locais se a tool create_crm_contact foi executada
+    updates = _extract_crm_ids(result.get("messages", []))
+    if updates:
+        return {**result, **updates}
 
     return result
 
@@ -128,12 +130,13 @@ def node_tool_executor(state: AgentState) -> dict[str, Any]:
 # Node: sincronizar CRM
 # ---------------------------------------------------------------------------
 
-def node_sync_crm(state: AgentState) -> dict[str, Any]:
+async def node_sync_crm(state: AgentState) -> dict[str, Any]:
     """
-    Atualiza o CRM com os dados extraídos e avança o pipeline se necessário.
-    Executado após cada resposta do agente.
+    Atualiza o CRM local com os dados extraídos e avança a etapa do pipeline se necessário.
+    Executado de forma assíncrona após cada resposta do agente.
     """
-    if not state.get("crm_contact_id"):
+    contact_id = state.get("crm_contact_id")
+    if not contact_id:
         logger.warning("sync_crm: no contact_id yet, skipping")
         return {}
 
@@ -147,11 +150,13 @@ def node_sync_crm(state: AgentState) -> dict[str, Any]:
         "pipeline_stage": state.get("pipeline_stage", "em_qualificacao"),
     }
 
-    client.update_contact(contact_id=state["crm_contact_id"], fields=fields)
-    client.set_pipeline_stage(
-        contact_id=state["crm_contact_id"],
-        stage=state.get("pipeline_stage", "em_qualificacao"),
-    )
+    # Atualiza dados no banco local de forma assíncrona
+    await client.update_contact_data(contact_id=contact_id, fields=fields)
+    
+    # Avança a etapa no banco local se aplicável
+    negocio_id = state.get("negocio_id")
+    if negocio_id:
+        await client.update_etapa_funil(negocio_id=negocio_id, nova_etapa=state.get("pipeline_stage", "em_qualificacao"))
 
     return {}
 
@@ -251,16 +256,35 @@ def _merge_extraction(state: AgentState, extracted: dict) -> dict:
     return updates
 
 
-def _extract_crm_id_from_tool_messages(messages: list) -> str | None:
-    """Extrai contact_id do resultado de tool create_crm_contact."""
+def _extract_crm_ids(messages: list) -> dict:
+    """
+    Extrai os IDs do contato e do negócio gerados pela tool create_crm_contact.
+    """
     for msg in messages:
         if hasattr(msg, "name") and msg.name == "create_crm_contact":
             try:
                 data = json.loads(msg.content)
-                return data.get("contact_id")
-            except Exception:
+                contact_id = data.get("contact_id")
+                deal_id = data.get("deal_id")
+                
+                updates = {}
+                if contact_id:
+                    updates["crm_contact_id"] = str(contact_id)
+                    try:
+                        updates["contato_id"] = int(contact_id)
+                    except ValueError:
+                        # Fallback (contato_id string ex: 'fallback_...')
+                        pass
+                if deal_id:
+                    try:
+                        updates["negocio_id"] = int(deal_id)
+                    except ValueError:
+                        pass
+                return updates
+            except Exception as exc:
+                logger.warning("Falha ao ler IDs do retorno da tool create_crm_contact: %s", exc)
                 pass
-    return None
+    return {}
 
 
 def _build_lead_summary(state: AgentState) -> str:

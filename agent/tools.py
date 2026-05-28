@@ -2,15 +2,18 @@
 agent/tools.py
 --------------
 LangChain Tools disponíveis para o agente Lara via tool calling.
-Cada tool representa uma ação concreta sobre o CRM ou canal de mensagens.
+Cada tool agora interage de forma assíncrona com o CRM Próprio Local.
 """
 
 from __future__ import annotations
 
 import logging
+import os
 from typing import Optional
 
 from langchain_core.tools import tool
+
+from crm.client import CRMClient
 
 logger = logging.getLogger(__name__)
 
@@ -20,13 +23,13 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 @tool
-def create_crm_contact(
+async def create_crm_contact(
     whatsapp: str,
     nome: Optional[str] = None,
     canal_origem: Optional[str] = "whatsapp",
 ) -> dict:
     """
-    Cria um novo contato/lead no CRM (Bitrix24 ou HubSpot) com os dados iniciais.
+    Cria um novo contato/lead no CRM local com os dados iniciais.
     Deve ser chamado na PRIMEIRA mensagem recebida de um novo número.
 
     Args:
@@ -35,43 +38,39 @@ def create_crm_contact(
         canal_origem: Canal de aquisição do lead.
 
     Returns:
-        dict com 'contact_id' e 'crm_url' do contato criado.
+        dict com 'contact_id', 'deal_id' e 'crm_url' do contato criado.
     """
-    # Implementação real importada do módulo crm
-    from crm.client import CRMClient
     client = CRMClient()
-    result = client.create_contact(
-        whatsapp=whatsapp,
+    result = await client.get_or_create_contato(
+        whatsapp_id=whatsapp,
         nome=nome,
-        canal_origem=canal_origem,
     )
-    logger.info("CRM contact created: %s", result.get("contact_id"))
+    logger.info("Local CRM contact created/retrieved: %s (Deal: %s)", 
+                result.get("contact_id"), result.get("deal_id"))
     return result
 
 
 @tool
-def update_crm_lead(contact_id: str, fields: dict) -> dict:
+async def update_crm_lead(contact_id: str, fields: dict) -> dict:
     """
-    Atualiza campos do lead/negócio no CRM com os dados extraídos pelo agente.
+    Atualiza campos do lead/negócio no CRM local com os dados extraídos pelo agente.
 
     Args:
-        contact_id: ID do contato no CRM.
+        contact_id: ID do contato no CRM (ou ID fake de fallback).
         fields: Dicionário com campos a atualizar (lead, evento, comercial).
 
     Returns:
         dict com status da operação.
     """
-    from crm.client import CRMClient
     client = CRMClient()
-    result = client.update_contact(contact_id=contact_id, fields=fields)
-    logger.info("CRM lead updated: %s → stage %s", contact_id, fields.get("pipeline_stage"))
-    return result
+    return await client.update_contact_data(contact_id=contact_id, fields=fields)
+
 
 
 @tool
-def advance_pipeline_stage(contact_id: str, stage: str) -> dict:
+async def advance_pipeline_stage(contact_id: str, stage: str) -> dict:
     """
-    Avança o estágio do pipeline do lead no CRM.
+    Avança o estágio do pipeline do lead no CRM local.
 
     Args:
         contact_id: ID do contato no CRM.
@@ -81,16 +80,34 @@ def advance_pipeline_stage(contact_id: str, stage: str) -> dict:
     Returns:
         dict com status.
     """
-    from crm.client import CRMClient
+    if contact_id.startswith("fallback_"):
+        return {"status": "fallback_success"}
+
     client = CRMClient()
-    return client.set_pipeline_stage(contact_id=contact_id, stage=stage)
+    try:
+        from sqlalchemy import select
+        from crm.database import get_db_session
+        from crm.models import Negocio
+
+        async with get_db_session() as session:
+            stmt = select(Negocio).where(Negocio.contato_id == int(contact_id))
+            result = await session.execute(stmt)
+            negocio = result.scalar_one_or_none()
+            if not negocio:
+                return {"status": "not_found"}
+            negocio_id = negocio.id
+
+        return await client.update_etapa_funil(negocio_id=negocio_id, nova_etapa=stage)
+    except Exception as exc:
+        logger.error("Erro ao avançar etapa do lead no banco: %s", exc, exc_info=True)
+        return {"status": "error", "message": str(exc)}
 
 
 @tool
-def notify_human_agent(contact_id: str, summary: str, whatsapp: str) -> dict:
+async def notify_human_agent(contact_id: str, summary: str, whatsapp: str) -> dict:
     """
     Envia notificação ao atendente humano quando o dossiê está completo.
-    Dispara via WhatsApp e/ou e-mail configurado no .env.
+    Dispara via WhatsApp configurado no .env.
 
     Args:
         contact_id: ID do contato no CRM.
@@ -101,15 +118,19 @@ def notify_human_agent(contact_id: str, summary: str, whatsapp: str) -> dict:
         dict com status do envio.
     """
     from whatsapp.client import WhatsAppClient
-    import os
 
     client = WhatsAppClient()
     agent_number = os.getenv("HUMAN_AGENT_WHATSAPP")
+    
+    crm_url = f"http://localhost:8000/crm/contacts/{contact_id}"
+    if contact_id.startswith("fallback_"):
+        crm_url = "#fallback-database-offline"
+
     message = (
         f"🔔 *Novo lead qualificado!*\n\n"
         f"📋 {summary}\n\n"
         f"📱 WhatsApp do cliente: {whatsapp}\n"
-        f"🔗 CRM: {os.getenv('CRM_BASE_URL', '')}/contacts/{contact_id}"
+        f"🔗 CRM Local: {crm_url}"
     )
     result = client.send_message(to=agent_number, text=message)
     logger.info("Human agent notified for contact %s", contact_id)
@@ -117,14 +138,14 @@ def notify_human_agent(contact_id: str, summary: str, whatsapp: str) -> dict:
 
 
 @tool
-def log_conversation_message(
+async def log_conversation_message(
     contact_id: str,
     direction: str,
     content: str,
     timestamp: str,
 ) -> dict:
     """
-    Registra uma mensagem no histórico do CRM para auditoria (RF-08).
+    Registra uma mensagem no histórico do CRM local para auditoria (RF-08).
 
     Args:
         contact_id: ID do contato no CRM.
@@ -135,10 +156,12 @@ def log_conversation_message(
     Returns:
         dict com status do log.
     """
-    from crm.client import CRMClient
+    if contact_id.startswith("fallback_"):
+        return {"status": "fallback_success"}
+
     client = CRMClient()
-    return client.log_activity(
-        contact_id=contact_id,
+    return await client.log_activity(
+        contact_id=int(contact_id),
         direction=direction,
         content=content,
         timestamp=timestamp,
@@ -169,6 +192,7 @@ def send_whatsapp_message(to: str, text: str) -> dict:
 
 
 # Registro de todas as tools disponíveis para bind ao LLM
+# Note: LangChain detecta se a tool é síncrona ou assíncrona automaticamente.
 ALL_TOOLS = [
     create_crm_contact,
     update_crm_lead,

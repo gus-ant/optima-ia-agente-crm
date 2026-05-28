@@ -55,9 +55,12 @@ class AgentState(TypedDict):
 
     # Identificação da sessão
     session_id: str          # phone number normalizado (ex: "5511999998888")
-    crm_contact_id: Optional[str]   # ID do contato no CRM após criação
+    crm_contact_id: Optional[str]   # ID do contato no CRM antigo (retrocompatibilidade)
+    contato_id: Optional[int]       # ID do contato no CRM próprio local
+    negocio_id: Optional[int]       # ID do negócio no CRM próprio local
 
     # Dados extraídos pelo LLM
+
     lead: LeadData
     evento: EventoData
     comercial: ComercialData

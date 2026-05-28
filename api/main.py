@@ -28,6 +28,14 @@ async def lifespan(app: FastAPI):
     """Inicializa recursos compartilhados na startup."""
     from agent.graph import get_graph
     from memory.store import init_store
+    from crm.database import init_db
+
+    logger.info("Initializing Local CRM Database...")
+    try:
+        await init_db()
+        logger.info("Local CRM Database initialized successfully ✓")
+    except Exception as exc:
+        logger.error("Failed to initialize database: %s", exc, exc_info=True)
 
     logger.info("Initializing LangGraph agent...")
     get_graph()  # força compilação antecipada
@@ -38,6 +46,7 @@ async def lifespan(app: FastAPI):
     logger.info("Óptima IA Agent ready ✓")
     yield
     logger.info("Shutting down...")
+
 
 
 app = FastAPI(
