@@ -1,6 +1,6 @@
 # Óptima IA — Agente Lara × Lu Decorações
 
-Agente de qualificação de leads via WhatsApp, construído com **LangGraph + LangChain** e integrado ao **Bitrix24/HubSpot**. O N8N é usado exclusivamente para triggers simples (follow-up cron, fallback webhook).
+Agente de qualificação de leads via WhatsApp, construído com **LangGraph + LangChain** e integrado a um **CRM Próprio Local** rodando em **PostgreSQL**. O N8N é usado exclusivamente para triggers simples (follow-up cron, fallback webhook).
 
 ## Stack
 
@@ -10,8 +10,8 @@ Agente de qualificação de leads via WhatsApp, construído com **LangGraph + La
 | **API / Webhook receiver** | FastAPI |
 | **LLM** | OpenAI GPT-4o / Anthropic Claude |
 | **Canal** | WhatsApp Cloud API (Meta) ou Evolution API |
-| **CRM** | Bitrix24 (padrão) ou HubSpot |
-| **Estado de sessão** | Redis |
+| **CRM** | CRM Próprio Local (PostgreSQL + SQLAlchemy Assíncrono) |
+| **Estado de sessão** | Redis (LangGraph memory/checkpointer) |
 | **Triggers simples** | N8N (follow-up cron, notificações) |
 | **Infra** | Docker + VPS (Hetzner/DigitalOcean) |
 
@@ -22,37 +22,39 @@ optima-ia-agente-crm/
 ├── agent/                   # Núcleo do agente (LangGraph)
 │   ├── graph.py             # Definição e compilação do grafo
 │   ├── nodes.py             # Nós do grafo (receive, LLM, sync, handoff)
-│   ├── state.py             # AgentState — estado compartilhado tipado
-│   ├── tools.py             # LangChain Tools (CRM, WhatsApp)
+│   ├── state.py             # AgentState — estado compartilhado tipado (inclui contato_id/negocio_id)
+│   ├── tools.py             # LangChain Tools (Integração com Local CRM, WhatsApp)
 │   ├── prompts.py           # System prompts versionados
 │   └── extraction.py        # Extração estruturada via Pydantic + LLM
 │
 ├── api/                     # FastAPI — Webhook receiver
-│   ├── main.py              # App principal + lifespan
+│   ├── main.py              # App principal + lifespan (inicializa tabelas DB local)
 │   └── routers/
 │       ├── webhook.py       # POST /webhook/meta e /webhook/evolution
 │       └── health.py        # GET /health/
 │
-├── crm/                     # Clientes CRM
-│   └── client.py            # Bitrix24Client + HubSpotClient (factory)
+├── crm/                     # CRM Próprio Local
+│   ├── database.py          # Configurações do SQLAlchemy assíncrono (engine, get_db_session)
+│   ├── models.py            # Modelos relacionais (Contato, Negocio, Atividade)
+│   └── client.py            # LocalCRMClient (gestão de contatos, negócios e atividades)
 │
 ├── whatsapp/                # Clientes WhatsApp
 │   └── client.py            # MetaWhatsAppClient + EvolutionWhatsAppClient
 │
-├── memory/                  # Persistência de estado
-│   └── store.py             # Redis store + fallback in-memory
+├── memory/                  # Persistência de estado conversacional
+│   └── store.py             # Redis store + fallback in-memory para dev
 │
-├── n8n_flows/               # Fluxos N8N exportados (triggers simples)
+├── n8n_flows/               # Fluxos N8N exportados (triggers simples de follow-up)
 │
 ├── tests/                   # Testes unitários e de integração
-│   └── test_graph.py
+│   └── test_graph.py        # Testes usando banco SQLite em memória
 │
 ├── infra/
-│   └── docker-compose.yml   # Stack completo: agent + Redis + N8N
+│   └── docker-compose.yml   # Stack local: FastAPI Agent + Redis + PostgreSQL + N8N
 │
 ├── prompts/                 # System prompts versionados em Markdown
 ├── schemas/                 # JSON schemas de extração
-├── docs/                    # Documentação técnica
+├── docs/                    # Documentação técnica e guias de alterações/configurações
 │
 ├── Dockerfile
 ├── requirements.txt
@@ -71,77 +73,71 @@ receive_message          ← entrada: mensagem do WhatsApp
   ▼
 call_llm (Lara)          ← invoca GPT-4o com system prompt + histórico
   │
-  ├─[tool_calls?]──► tool_executor    ← create_contact, update_crm, etc.
+  ├─[tool_calls?]──► tool_executor    ← create_crm_contact, update_crm_lead, etc.
   │                       │
   │◄──────────────────────┘
   ▼
-sync_crm                 ← atualiza campos + pipeline no CRM
+sync_crm                 ← atualiza campos + pipeline no Banco Relacional Local
   │
   ├─[pronto_transbordo?]──► handoff   ← notifica atendente + mensagem final
   │
   └─[aguardando]──► END
 ```
 
+## Modelagem do CRM Local (Banco de Dados)
+
+O banco de dados do CRM Próprio possui três tabelas fundamentais:
+*   **`Contato` (`contatos`):** Armazena dados de cadastro (ID, WhatsApp ID único, nome, data de criação).
+*   **`Negocio` (`negocios`):** Registra a oportunidade de vendas vinculada ao contato (tipo de evento, data do evento, orçamento estimado parseado automaticamente, etapa do funil e notas detalhadas da Lara).
+*   **`Atividade` (`atividades`):** Logs de conversas (mensagens inbound e outbound) com timestamp para fins de auditoria.
+
+---
+
 ## Início Rápido
 
+### 1. Clonar e configurar ambiente
 ```bash
-# 1. Clone e configure o ambiente
 git clone <repo>
 cd optima-ia-agente-crm
 cp .env.example .env
-# Edite .env com suas chaves de API
+# Edite o arquivo .env com a sua OPENAI_API_KEY
+```
 
-# 2. Desenvolvimento local (sem Docker)
-python -m venv .venv
+### 2. Desenvolvimento local (Usando SQLite em memória)
+```bash
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Inicia Redis (requer Docker)
-docker run -d -p 6379:6379 redis:7-alpine
-
-# Inicia o agente
+# Roda a API FastAPI localmente (Cria automaticamente as tabelas SQLite)
 python -m api.main
+```
 
-# 3. Produção (Docker Compose)
+### 3. Rodando em Produção (Docker Compose)
+Suba a stack inteira contendo o PostgreSQL local configurado e persistente:
+```bash
 docker compose -f infra/docker-compose.yml up -d
+```
 
-# 4. Testes
+### 4. Executando testes locais
+```bash
+source .venv/bin/activate
 pytest tests/ -v
 ```
 
+---
+
 ## Configuração do Webhook
 
-### Meta Cloud API
-1. No Meta Business → WhatsApp → Webhooks
-2. URL: `https://seu-dominio.com/webhook/meta`
-3. Token de verificação: valor de `META_WEBHOOK_VERIFY_TOKEN` no `.env`
-4. Campos assinados: `messages`
+### Meta WhatsApp Cloud API
+1.  No Meta Business Suite → WhatsApp → Webhooks
+2.  URL: `https://seu-dominio.com/webhook/meta`
+3.  Token de verificação: valor de `META_WEBHOOK_VERIFY_TOKEN` configurado no `.env`
+4.  Campos assinados: `messages`
 
-### Evolution API
-1. No painel Evolution, configure webhook URL: `https://seu-dominio.com/webhook/evolution`
-2. Evento: `messages.upsert`
-
-## N8N — Triggers Usados
-
-| Fluxo | Gatilho | Ação |
-|-------|---------|------|
-| Follow-up 24h | Cron: diário | Chama `GET /webhook/n8n/followup` |
-| Alerta de falha | Webhook de erro | Notifica Slack/e-mail |
-
-## Variáveis de Ambiente
-
-Veja [`.env.example`](.env.example) para a lista completa.
-
-Mínimo necessário para funcionar:
-```
-OPENAI_API_KEY=sk-...
-META_ACCESS_TOKEN=...
-META_PHONE_NUMBER_ID=...
-META_WEBHOOK_VERIFY_TOKEN=...
-BITRIX24_WEBHOOK_URL=...
-```
+---
 
 ## Cliente
 
 Desenvolvido para **Lu Decorações** pela **Óptima IA**.  
-Documentação completa em `docs/`.
+Documentação completa de alterações e arquitetura em `docs/alteracoes_e_configuracao.md`.
