@@ -127,3 +127,109 @@ class Atividade(Base):
             "conteudo": self.conteudo,
             "timestamp": self.timestamp,
         }
+
+
+class Agendamento(Base):
+    """
+    Representa um agendamento de atendimento/consulta.
+    
+    Regras:
+    - Segunda a sexta: 08:00 - 16:30
+    - Sábado: 08:00 - 11:00
+    - Consulta: 40 minutos
+    - Atendimento: 60 minutos
+    - Confirmação obrigatória (24h)
+    """
+    __tablename__ = "agendamentos"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    negocio_id: Mapped[int] = mapped_column(
+        Integer, 
+        ForeignKey("negocios.id", ondelete="CASCADE"), 
+        nullable=False
+    )
+    contato_id: Mapped[int] = mapped_column(
+        Integer, 
+        ForeignKey("contatos.id", ondelete="CASCADE"), 
+        nullable=False
+    )
+    
+    # --- Informações da Consulta ---
+    data_agendamento: Mapped[datetime] = mapped_column(
+        DateTime, 
+        nullable=False,
+        index=True  # Índice para buscas rápidas por horário
+    )
+    duracao_minutos: Mapped[int] = mapped_column(
+        Integer, 
+        default=60,
+        nullable=False
+    )  # 40 (consulta) ou 60 (atendimento)
+    
+    tipo_agendamento: Mapped[str] = mapped_column(
+        String(50),
+        default="consulta_inicial",
+        nullable=False
+    )  # 'consulta_inicial', 'visita_local', 'apresentacao_orcamento'
+    
+    local_atendimento: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True
+    )  # Endereço ou 'Online'
+    
+    observacoes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # --- Status de Confirmação ---
+    confirmado: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    data_confirmacao: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    
+    # --- Realização ---
+    presente: Mapped[bool] = mapped_column(Boolean, default=False)
+    data_presenca: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    
+    # --- Cancelamento ---
+    cancelado_em: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    motivo_cancelamento: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # --- Auditoria ---
+    criado_em: Mapped[datetime] = mapped_column(
+        DateTime, 
+        default=lambda: datetime.now(timezone.utc),
+        index=True
+    )
+    atualizado_em: Mapped[datetime] = mapped_column(
+        DateTime, 
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
+    
+    # --- Sincronização com Calendários Externos ---
+    external_calendar_id: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True
+    )  # ID do evento em Google Calendar, Outlook, etc
+    
+    # Relacionamentos
+    negocio: Mapped[Negocio] = relationship("Negocio")
+    contato: Mapped[Contato] = relationship("Contato")
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "negocio_id": self.negocio_id,
+            "contato_id": self.contato_id,
+            "data_agendamento": self.data_agendamento.isoformat() if self.data_agendamento else None,
+            "duracao_minutos": self.duracao_minutos,
+            "tipo_agendamento": self.tipo_agendamento,
+            "local_atendimento": self.local_atendimento,
+            "observacoes": self.observacoes,
+            "confirmado": self.confirmado,
+            "data_confirmacao": self.data_confirmacao.isoformat() if self.data_confirmacao else None,
+            "presente": self.presente,
+            "data_presenca": self.data_presenca.isoformat() if self.data_presenca else None,
+            "cancelado_em": self.cancelado_em.isoformat() if self.cancelado_em else None,
+            "motivo_cancelamento": self.motivo_cancelamento,
+            "criado_em": self.criado_em.isoformat() if self.criado_em else None,
+            "atualizado_em": self.atualizado_em.isoformat() if self.atualizado_em else None,
+            "external_calendar_id": self.external_calendar_id,
+        }

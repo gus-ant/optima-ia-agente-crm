@@ -32,6 +32,12 @@ pydantic-settings>=2.3.0
 python-dotenv>=1.0.1
 structlog>=24.2.0             # logging estruturado
 
+# --- Integração (v2.0) ---
+uazapi>=1.0.0                 # Cliente UazAPI para WhatsApp
+google-auth>=2.0.0            # Google authentication
+google-api-python-client>=2.0.0  # Google APIs (Calendar, etc)
+apscheduler>=3.10.0           # Agendador de tarefas (lembretes automáticos)
+
 # --- Dev / Testes ---
 pytest>=8.2.0
 pytest-asyncio>=0.23.7
