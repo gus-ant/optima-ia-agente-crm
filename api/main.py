@@ -17,8 +17,10 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
-from api.routers import health, webhook
+from api.routers import health, webhook, dashboard
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +69,15 @@ app.add_middleware(
 # Routers
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(webhook.router, prefix="/webhook", tags=["webhook"])
+app.include_router(dashboard.router)
+
+# Serve static dashboard files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/")
+async def serve_dashboard():
+    """Retorna o index.html da pasta static para a rota raiz."""
+    return FileResponse("static/index.html")
 
 
 if __name__ == "__main__":

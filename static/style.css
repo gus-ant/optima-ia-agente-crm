@@ -1,0 +1,51 @@
+/* Custom CRM Dashboard styling overrides */
+
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', sans-serif;
+}
+
+/* Glassmorphism custom scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.01);
+    border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(244, 63, 94, 0.2);
+    border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(244, 63, 94, 0.4);
+}
+
+/* Custom transitions and properties */
+.tab-section {
+    animation: fadeIn 0.3s ease-out-in forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Custom style for active list hover items */
+select option {
+    background-color: #0b0f19;
+    color: #e2e8f0;
+}

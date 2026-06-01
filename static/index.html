@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Óptima IA — Lara CRM Dashboard</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#fff1f2',
+                            100: '#ffe4e6',
+                            200: '#fecdd3',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                            700: '#be123c',
+                        },
+                        glass: {
+                            DEFAULT: 'rgba(255, 255, 255, 0.03)',
+                            hover: 'rgba(255, 255, 255, 0.07)',
+                            border: 'rgba(255, 255, 255, 0.08)',
+                            card: 'rgba(15, 23, 42, 0.6)',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="/static/style.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-[#0b0f19] text-[#e2e8f0] font-sans antialiased overflow-hidden min-h-screen flex">
+    
+    <!-- Background Glow Blobs -->
+    <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-brand-600/10 blur-[120px] pointer-events-none z-0"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-600/10 blur-[150px] pointer-events-none z-0"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-64 border-r border-glass-border bg-glass backdrop-blur-xl p-6 flex flex-col justify-between z-10">
+        <div>
+            <!-- Logo & Brand -->
+            <div class="flex items-center gap-3 mb-10 px-2">
+                <div class="p-2 rounded-xl bg-gradient-to-tr from-brand-600 to-rose-400 text-white shadow-lg shadow-brand-600/20">
+                    <i data-lucide="sparkles" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-outfit font-bold text-lg leading-none text-white tracking-wide">Óptima IA</h1>
+                    <span class="text-[10px] text-brand-500 font-bold tracking-widest uppercase">Lara Agent × CRM</span>
+                </div>
+            </div>
+
+            <!-- Nav Links -->
+            <nav class="space-y-1">
+                <button onclick="switchTab('overview')" id="btn-overview" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition duration-200 text-sm font-semibold group bg-brand-600/10 text-brand-500 shadow-sm border border-brand-500/20">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
+                    <span>Painel Geral</span>
+                </button>
+                <button onclick="switchTab('kanban')" id="btn-kanban" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition duration-200 text-sm font-semibold group text-slate-400 hover:bg-glass-hover hover:text-white border border-transparent">
+                    <i data-lucide="columns-3" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
+                    <span>Quadro Kanban</span>
+                </button>
+                <button onclick="switchTab('leads')" id="btn-leads" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition duration-200 text-sm font-semibold group text-slate-400 hover:bg-glass-hover hover:text-white border border-transparent">
+                    <i data-lucide="users" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
+                    <span>Clientes & Chats</span>
+                </button>
+                <button onclick="switchTab('agenda')" id="btn-agenda" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition duration-200 text-sm font-semibold group text-slate-400 hover:bg-glass-hover hover:text-white border border-transparent">
+                    <i data-lucide="calendar" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
+                    <span>Agenda de Eventos</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="p-4 rounded-xl border border-glass-border bg-glass/40 text-center">
+            <p class="text-[11px] text-slate-400 mb-1">CRM Database Status</p>
+            <div class="flex items-center justify-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="text-xs font-bold text-slate-200">SQLite Conectado</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col min-w-0 z-10">
+        <!-- Top Navbar -->
+        <header class="h-16 border-b border-glass-border bg-glass/20 backdrop-blur-md px-8 flex items-center justify-between">
+            <h2 id="page-title" class="font-outfit font-semibold text-xl text-white">Dashboard Geral</h2>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-glass-border bg-glass/60">
+                    <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
+                    <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Agente Lara Online</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Inner Scroll Container -->
+        <div id="content-container" class="flex-1 p-8 overflow-y-auto max-h-[calc(100vh-4rem)]">
+            
+            <!-- SECTION 1: OVERVIEW TAB (DEFAULT) -->
+            <section id="tab-overview" class="space-y-8 tab-section">
+                <!-- Summary Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="p-6 rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md hover:border-brand-500/30 transition duration-300 flex items-center gap-5">
+                        <div class="p-4 rounded-xl bg-brand-500/10 text-brand-500">
+                            <i data-lucide="users-2" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total de Leads</span>
+                            <h3 id="stat-total-contacts" class="font-outfit font-bold text-2xl text-white mt-1">0</h3>
+                        </div>
+                    </div>
+                    <div class="p-6 rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md hover:border-blue-500/30 transition duration-300 flex items-center gap-5">
+                        <div class="p-4 rounded-xl bg-blue-500/10 text-blue-500">
+                            <i data-lucide="circle-dot" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Negócios Abertos</span>
+                            <h3 id="stat-total-deals" class="font-outfit font-bold text-2xl text-white mt-1">0</h3>
+                        </div>
+                    </div>
+                    <div class="p-6 rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md hover:border-emerald-500/30 transition duration-300 flex items-center gap-5">
+                        <div class="p-4 rounded-xl bg-emerald-500/10 text-emerald-500">
+                            <i data-lucide="calendar-check" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Agendamentos</span>
+                            <h3 id="stat-total-appointments" class="font-outfit font-bold text-2xl text-white mt-1">0</h3>
+                        </div>
+                    </div>
+                    <div class="p-6 rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md hover:border-violet-500/30 transition duration-300 flex items-center gap-5">
+                        <div class="p-4 rounded-xl bg-violet-500/10 text-violet-500">
+                            <i data-lucide="sparkles" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Prontos p/ Humano</span>
+                            <h3 id="stat-ready-for-handoff" class="font-outfit font-bold text-2xl text-white mt-1">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Graphs and Funnel Analytics Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 p-6 rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md flex flex-col justify-between">
+                        <div>
+                            <h4 class="font-outfit font-bold text-lg text-white mb-2">Funil de Atendimento</h4>
+                            <p class="text-xs text-slate-400 mb-6">Leads em cada etapa de qualificação no banco de dados.</p>
+                        </div>
+                        <div class="h-64 relative flex items-center justify-center">
+                            <canvas id="funnelChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="p-6 rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md flex flex-col">
+                        <h4 class="font-outfit font-bold text-lg text-white mb-2">Conversão do Robô</h4>
+                        <p class="text-xs text-slate-400 mb-6">Proporção de leads prontos para envio ao comercial.</p>
+                        <div class="h-64 relative flex items-center justify-center">
+                            <canvas id="conversionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2: KANBAN TAB -->
+            <section id="tab-kanban" class="hidden tab-section">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-start h-full">
+                    <!-- Column 1: NOVO -->
+                    <div class="flex flex-col bg-[#0f1422] rounded-2xl border border-glass-border p-4 h-[75vh]">
+                        <div class="flex items-center justify-between mb-4 pb-2 border-b border-glass-border">
+                            <span class="text-sm font-bold text-white tracking-wide">Novo Lead</span>
+                            <span id="count-kanban-novo" class="px-2 py-0.5 rounded bg-brand-500/10 text-brand-500 font-bold text-xs">0</span>
+                        </div>
+                        <div id="kanban-stage-novo" class="space-y-4 overflow-y-auto flex-1 pb-4"></div>
+                    </div>
+                    <!-- Column 2: EM_QUALIFICACAO -->
+                    <div class="flex flex-col bg-[#0f1422] rounded-2xl border border-glass-border p-4 h-[75vh]">
+                        <div class="flex items-center justify-between mb-4 pb-2 border-b border-glass-border">
+                            <span class="text-sm font-bold text-blue-400 tracking-wide">Em Qualificação</span>
+                            <span id="count-kanban-em_qualificacao" class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-bold text-xs">0</span>
+                        </div>
+                        <div id="kanban-stage-em_qualificacao" class="space-y-4 overflow-y-auto flex-1 pb-4"></div>
+                    </div>
+                    <!-- Column 3: ALINHAMENTO -->
+                    <div class="flex flex-col bg-[#0f1422] rounded-2xl border border-glass-border p-4 h-[75vh]">
+                        <div class="flex items-center justify-between mb-4 pb-2 border-b border-glass-border">
+                            <span class="text-sm font-bold text-amber-400 tracking-wide">Alinhamento</span>
+                            <span id="count-kanban-alinhamento" class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-bold text-xs">0</span>
+                        </div>
+                        <div id="kanban-stage-alinhamento" class="space-y-4 overflow-y-auto flex-1 pb-4"></div>
+                    </div>
+                    <!-- Column 4: PRONTO_PARA_HUMANO -->
+                    <div class="flex flex-col bg-[#0f1422] rounded-2xl border border-glass-border p-4 h-[75vh]">
+                        <div class="flex items-center justify-between mb-4 pb-2 border-b border-glass-border">
+                            <span class="text-sm font-bold text-emerald-400 tracking-wide">Pronto p/ Humano</span>
+                            <span id="count-kanban-pronto_para_humano" class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold text-xs">0</span>
+                        </div>
+                        <div id="kanban-stage-pronto_para_humano" class="space-y-4 overflow-y-auto flex-1 pb-4"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 3: LEADS LIST & CHAT TAB -->
+            <section id="tab-leads" class="hidden tab-section flex flex-col gap-6">
+                <!-- Top: Table of Leads -->
+                <div class="rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md p-6 flex flex-col h-[340px] min-w-0">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="font-outfit font-bold text-lg text-white">Listagem de Contatos</h4>
+                        <div class="relative w-64">
+                            <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
+                            <input type="text" id="lead-search-input" onkeyup="filterLeadsTable()" placeholder="Buscar contato..." class="w-full bg-slate-900/60 border border-glass-border rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30">
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto rounded-xl border border-glass-border">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-[#13192c] border-b border-glass-border font-bold text-slate-200">
+                                    <th class="p-4">Lead</th>
+                                    <th class="p-4">WhatsApp</th>
+                                    <th class="p-4">Estágio</th>
+                                    <th class="p-4">Criação</th>
+                                    <th class="p-4 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leads-table-body" class="divide-y divide-glass-border/30"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Bottom: Chat Mockup Audit Box -->
+                <div id="chat-mockup-container" class="rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md flex flex-col h-[380px]">
+                    <!-- Chat Header -->
+                    <div class="p-4 border-b border-glass-border bg-glass/20 flex items-center justify-between rounded-t-2xl">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-brand-500/20 text-brand-500 flex items-center justify-center font-bold text-sm">
+                                <i data-lucide="user" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h5 id="chat-active-name" class="font-outfit font-semibold text-white text-sm">Selecione um Lead</h5>
+                                <p id="chat-active-phone" class="text-xs text-slate-400">Clique em "Ver Conversa"</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages Screen -->
+                    <div id="chat-messages-container" class="flex-1 p-6 overflow-y-auto space-y-4 bg-slate-950/20 flex flex-col justify-end min-h-0">
+                        <div class="text-center text-slate-500 text-sm my-auto">
+                            <i data-lucide="message-square" class="w-8 h-8 mx-auto mb-2 text-slate-600"></i>
+                            Selecione um lead na tabela acima para visualizar a auditoria de mensagens.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 4: APPOINTMENTS TAB -->
+            <section id="tab-agenda" class="hidden tab-section">
+                <div class="rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md p-6">
+                    <h4 class="font-outfit font-bold text-lg text-white mb-6">Próximos Agendamentos de Consultas</h4>
+                    
+                    <div class="overflow-x-auto rounded-xl border border-glass-border">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-[#13192c] border-b border-glass-border font-bold text-slate-200">
+                                    <th class="p-4">Cliente</th>
+                                    <th class="p-4">WhatsApp</th>
+                                    <th class="p-4">Data/Hora</th>
+                                    <th class="p-4">Duração</th>
+                                    <th class="p-4">Tipo</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4">Local</th>
+                                </tr>
+                            </thead>
+                            <tbody id="appointments-table-body" class="divide-y divide-glass-border/30"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Lucide Icons Script -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Dashboard Logic Script -->
+    <script src="/static/app.js"></script>
+</body>
+</html>
