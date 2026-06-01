@@ -4,6 +4,9 @@ api/main.py
 FastAPI application — ponto de entrada principal.
 Recebe webhooks do WhatsApp (Meta Cloud API ou Evolution API)
 e os encaminha ao agente LangGraph.
+
+Multi-Tenant: registra TenantMiddleware para resolver o tenant
+a partir do subdomínio, header X-Tenant-Slug ou query param tenant_slug.
 """
 
 from __future__ import annotations
@@ -19,6 +22,7 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routers import health, webhook
+from api.middleware import TenantMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +67,10 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+# Multi-Tenant: resolve tenant_id a partir de subdomínio / header / query param
+# DEVE ser adicionado DEPOIS do CORSMiddleware (Starlette empilha de baixo para cima)
+app.add_middleware(TenantMiddleware)
 
 # Routers
 app.include_router(health.router, prefix="/health", tags=["health"])

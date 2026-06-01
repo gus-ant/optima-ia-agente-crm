@@ -3,6 +3,9 @@ agent/nodes.py
 --------------
 Nós (nodes) do grafo LangGraph.
 Cada função representa um passo discreto no fluxo de qualificação do lead.
+
+Multi-Tenant: usa o LLM Gateway para selecionar modelo/prompt por tenant
+e thread_id composto ({tenant_id}:{phone}) para isolamento do checkpointer.
 """
 
 from __future__ import annotations
@@ -14,28 +17,10 @@ from datetime import datetime, timezone
 from typing import Any
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
 
-from agent.prompts import (
-    EXTRACTION_INSTRUCTION,
-    HANDOFF_MESSAGE,
-    LARA_SYSTEM_PROMPT,
-)
 from agent.state import AgentState
-from agent.tools import ALL_TOOLS
 
 logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# LLM singleton (sobrescrito em testes via monkeypatch)
-# ---------------------------------------------------------------------------
-
-def _get_llm() -> ChatOpenAI:
-    """Retorna instância do LLM com tools vinculadas."""
-    import os
-    model = os.getenv("LLM_MODEL", "gpt-4o")
-    llm = ChatOpenAI(model=model, temperature=0.3)
-    return llm.bind_tools(ALL_TOOLS)
 
 
 # ---------------------------------------------------------------------------
@@ -46,13 +31,16 @@ def node_receive_message(state: AgentState) -> dict[str, Any]:
     """
     Ponto de entrada: normaliza a mensagem recebida e garante que o lead
     já existe no CRM. Cria contato se for a primeira mensagem.
+
+    Multi-Tenant: carrega a AgentConfig do tenant se ainda não estiver no estado.
     """
     is_new_lead = not state.get("crm_contact_id") and not state.get("contato_id")
 
+    updates: dict[str, Any] = {}
+
     if is_new_lead:
         logger.info("New lead from %s — creating CRM contact", state["session_id"])
-        # O node não cria diretamente; delega ao tool_executor via LLM
-        return {
+        updates = {
             "pipeline_stage": "novo_lead",
             "pronto_transbordo": False,
             "follow_up_count": 0,
@@ -64,7 +52,30 @@ def node_receive_message(state: AgentState) -> dict[str, Any]:
             "negocio_id": None,
         }
 
-    return {}  # estado existente mantido
+    return updates
+
+
+async def node_load_tenant_config(state: AgentState) -> dict[str, Any]:
+    """
+    Carrega a configuração do agente do tenant (AgentConfig + plano).
+    Executado apenas uma vez por sessão (quando agent_config ainda não está no estado).
+    """
+    # Se já carregou nesta sessão, pula
+    if state.get("agent_config"):
+        return {}
+
+    tenant_id = state.get("tenant_id")
+    if not tenant_id:
+        logger.warning("node_load_tenant_config: sem tenant_id no estado, usando defaults")
+        return {}
+
+    from agent.llm_gateway import load_agent_config_for_tenant
+    config = await load_agent_config_for_tenant(tenant_id)
+    logger.info(
+        "AgentConfig carregado para tenant_id=%d: plano=%s model=%s",
+        tenant_id, config.get("plano"), config.get("llm_model") or "default",
+    )
+    return {"agent_config": config}
 
 
 # ---------------------------------------------------------------------------
@@ -75,11 +86,17 @@ def node_call_llm(state: AgentState) -> dict[str, Any]:
     """
     Invoca o LLM com o system prompt + histórico e retorna a resposta da Lara.
     Também extrai o bloco <extraction> JSON embutido na resposta.
+
+    Multi-Tenant: usa o LLM Gateway para obter o modelo e prompt corretos.
     """
-    llm = _get_llm()
+    from agent.llm_gateway import get_llm_for_tenant, get_system_prompt_for_tenant
+    from agent.prompts import EXTRACTION_INSTRUCTION
+
+    llm = get_llm_for_tenant(state)
+    system_prompt = get_system_prompt_for_tenant(state)
 
     messages = [
-        SystemMessage(content=LARA_SYSTEM_PROMPT),
+        SystemMessage(content=system_prompt),
         *state["messages"],
     ]
 
@@ -115,6 +132,8 @@ def node_tool_executor(state: AgentState) -> dict[str, Any]:
     para logging e tratamento de erros.
     """
     from langgraph.prebuilt import ToolNode
+    from agent.tools import ALL_TOOLS
+
     tool_node = ToolNode(ALL_TOOLS)
     result = tool_node.invoke(state)
 
@@ -132,8 +151,8 @@ def node_tool_executor(state: AgentState) -> dict[str, Any]:
 
 async def node_sync_crm(state: AgentState) -> dict[str, Any]:
     """
-    Atualiza o CRM local com os dados extraídos e avança a etapa do pipeline se necessário.
-    Executado de forma assíncrona após cada resposta do agente.
+    Atualiza o CRM local com os dados extraídos e avança a etapa do pipeline.
+    Multi-Tenant: passa tenant_id ao CRMClient para uso no get_tenant_db_session.
     """
     contact_id = state.get("crm_contact_id")
     if not contact_id:
@@ -141,7 +160,8 @@ async def node_sync_crm(state: AgentState) -> dict[str, Any]:
         return {}
 
     from crm.client import CRMClient
-    client = CRMClient()
+    tenant_id = state.get("tenant_id")
+    client = CRMClient(tenant_id=tenant_id)
 
     fields = {
         "lead": state.get("lead", {}),
@@ -150,13 +170,14 @@ async def node_sync_crm(state: AgentState) -> dict[str, Any]:
         "pipeline_stage": state.get("pipeline_stage", "em_qualificacao"),
     }
 
-    # Atualiza dados no banco local de forma assíncrona
     await client.update_contact_data(contact_id=contact_id, fields=fields)
-    
-    # Avança a etapa no banco local se aplicável
+
     negocio_id = state.get("negocio_id")
     if negocio_id:
-        await client.update_etapa_funil(negocio_id=negocio_id, nova_etapa=state.get("pipeline_stage", "em_qualificacao"))
+        await client.update_etapa_funil(
+            negocio_id=negocio_id,
+            nova_etapa=state.get("pipeline_stage", "em_qualificacao"),
+        )
 
     return {}
 
@@ -168,10 +189,10 @@ async def node_sync_crm(state: AgentState) -> dict[str, Any]:
 def node_handoff(state: AgentState) -> dict[str, Any]:
     """
     Envia notificação ao atendente humano e mensagem de encerramento ao cliente.
-    Executado apenas quando pronto_transbordo == True.
+    Multi-Tenant: usa o número do atendente da AgentConfig do tenant.
     """
     from whatsapp.client import WhatsAppClient
-    import os
+    from agent.prompts import HANDOFF_MESSAGE
 
     client = WhatsAppClient()
     nome = state.get("lead", {}).get("nome", "cliente")
@@ -180,15 +201,21 @@ def node_handoff(state: AgentState) -> dict[str, Any]:
     # Mensagem de encerramento para o cliente
     client.send_message(to=state["session_id"], text=farewell)
 
-    # Notificação interna para o atendente
-    agent_number = os.getenv("HUMAN_AGENT_WHATSAPP", "")
+    # Número do atendente: tenta agent_config primeiro, depois env var
+    agent_config = state.get("agent_config") or {}
+    agent_number = (
+        agent_config.get("human_agent_whatsapp")
+        or ""
+    )
+
     if agent_number:
         summary = _build_lead_summary(state)
+        tenant_info = f"🏢 Tenant: {state.get('tenant_slug', 'N/D')}"
         client.send_message(
             to=agent_number,
             text=(
                 f"🔔 *Novo lead qualificado!*\n\n{summary}\n\n"
-                f"📱 Cliente: {state['session_id']}"
+                f"📱 Cliente: {state['session_id']}\n{tenant_info}"
             ),
         )
 
@@ -241,7 +268,7 @@ def _merge_extraction(state: AgentState, extracted: dict) -> dict:
 
     for key in ("lead", "evento", "comercial"):
         new_data = extracted.get(key, {})
-        current = dict(state.get(key, {}))
+        current = dict(state.get(key, {}) or {})
         for field, value in (new_data or {}).items():
             if value is not None:
                 current[field] = value
@@ -266,14 +293,13 @@ def _extract_crm_ids(messages: list) -> dict:
                 data = json.loads(msg.content)
                 contact_id = data.get("contact_id")
                 deal_id = data.get("deal_id")
-                
+
                 updates = {}
                 if contact_id:
                     updates["crm_contact_id"] = str(contact_id)
                     try:
                         updates["contato_id"] = int(contact_id)
                     except ValueError:
-                        # Fallback (contato_id string ex: 'fallback_...')
                         pass
                 if deal_id:
                     try:
@@ -283,7 +309,6 @@ def _extract_crm_ids(messages: list) -> dict:
                 return updates
             except Exception as exc:
                 logger.warning("Falha ao ler IDs do retorno da tool create_crm_contact: %s", exc)
-                pass
     return {}
 
 

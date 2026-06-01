@@ -2,12 +2,13 @@
 agent/state.py
 --------------
 Define o estado compartilhado do grafo LangGraph para o agente Lara.
-Cada campo representa um slot de qualificação do lead ou metadado de controle.
+Multi-Tenant: adiciona tenant_id e agent_config ao estado para que
+cada tenant tenha configurações independentes de prompt e LLM.
 """
 
 from __future__ import annotations
 
-from typing import Annotated, List, Optional
+from typing import Annotated, List, Optional, Any
 from typing_extensions import TypedDict
 
 from langgraph.graph.message import add_messages
@@ -45,6 +46,19 @@ class ComercialData(TypedDict, total=False):
     avaliou_concorrencia: Optional[bool]
 
 
+class AgentConfigSnapshot(TypedDict, total=False):
+    """
+    Snapshot da configuração do agente carregada do banco no início da sessão.
+    Evita queries repetidas ao banco para cada mensagem.
+    """
+    nome_agente: str
+    system_prompt: Optional[str]      # None → usa o prompt padrão do código
+    llm_model: Optional[str]          # None → usa default do plano
+    temperatura: float
+    human_agent_whatsapp: Optional[str]
+    plano: str                         # basic|pro|enterprise
+
+
 # ---------------------------------------------------------------------------
 # Estado principal do grafo
 # ---------------------------------------------------------------------------
@@ -55,12 +69,20 @@ class AgentState(TypedDict):
 
     # Identificação da sessão
     session_id: str          # phone number normalizado (ex: "5511999998888")
-    crm_contact_id: Optional[str]   # ID do contato no CRM antigo (retrocompatibilidade)
+
+    # Multi-Tenant: identificador do tenant dono desta conversa
+    tenant_id: Optional[int]          # ID do tenant no banco
+    tenant_slug: Optional[str]        # Slug do tenant (para logs e debug)
+
+    # Configuração do agente carregada dinamicamente por tenant
+    agent_config: Optional[AgentConfigSnapshot]
+
+    # IDs no CRM local
+    crm_contact_id: Optional[str]   # retrocompatibilidade (string)
     contato_id: Optional[int]       # ID do contato no CRM próprio local
     negocio_id: Optional[int]       # ID do negócio no CRM próprio local
 
     # Dados extraídos pelo LLM
-
     lead: LeadData
     evento: EventoData
     comercial: ComercialData

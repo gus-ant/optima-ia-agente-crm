@@ -2,7 +2,7 @@
 crm/client.py
 -------------
 Cliente CRM Próprio Local integrado ao banco de dados relacional.
-Substitui a integração HTTP com Bitrix24/HubSpot por operações locais e assíncronas.
+Multi-Tenant: usa get_tenant_db_session() que injeta SET LOCAL para ativar o RLS.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from typing import Any, Dict, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from crm.database import get_db_session
+from crm.database import get_tenant_db_session
 from crm.models import Atividade, Contato, Negocio
 
 logger = logging.getLogger(__name__)
@@ -33,26 +33,41 @@ STAGE_MAP = {
 class LocalCRMClient:
     """
     Cliente para operações no CRM local usando sessões assíncronas do SQLAlchemy.
-    Possui tratamento de exceções robusto para assegurar tolerância a falhas.
+    Multi-Tenant: injeta tenant_id em todas as operações via get_tenant_db_session().
     """
+
+    def __init__(self, tenant_id: Optional[int] = None):
+        """
+        Args:
+            tenant_id: ID do tenant para isolar as operações via RLS.
+                       Se None, tenta usar o ContextVar current_tenant_id.
+        """
+        self._tenant_id = tenant_id
 
     async def get_or_create_contato(
         self, whatsapp_id: str, nome: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Busca ou cria um contato com o número de WhatsApp fornecido.
+        O tenant_id é obrigatório para criar um novo contato multi-tenant.
         """
         try:
-            async with get_db_session() as session:
-                stmt = select(Contato).where(Contato.whatsapp_id == whatsapp_id)
+            async with get_tenant_db_session(self._tenant_id) as session:
+                stmt = select(Contato).where(
+                    Contato.whatsapp_id == whatsapp_id,
+                    Contato.tenant_id == self._tenant_id,
+                )
                 result = await session.execute(stmt)
                 contato = result.scalar_one_or_none()
 
                 if contato is None:
                     logger.info("Contato não encontrado para whatsapp_id=%s. Criando...", whatsapp_id)
+                    if not self._tenant_id:
+                        raise ValueError("tenant_id é obrigatório para criar contato")
                     contato = Contato(
                         whatsapp_id=whatsapp_id,
                         nome=nome,
+                        tenant_id=self._tenant_id,
                     )
                     session.add(contato)
                     await session.flush()  # Garante geração do ID do contato
@@ -105,7 +120,7 @@ class LocalCRMClient:
         Cria um novo negócio (Deal) para o contato informado.
         """
         try:
-            async with get_db_session() as session:
+            async with get_tenant_db_session(self._tenant_id) as session:
                 negocio = Negocio(
                     contato_id=contato_id,
                     etapa_funil="NOVO"
@@ -126,7 +141,7 @@ class LocalCRMClient:
         Pode atualizar: tipo_evento, data_evento, orcamento_estimado, notas_agente.
         """
         try:
-            async with get_db_session() as session:
+            async with get_tenant_db_session(self._tenant_id) as session:
                 stmt = select(Negocio).where(Negocio.id == negocio_id)
                 result = await session.execute(stmt)
                 negocio = result.scalar_one_or_none()
@@ -306,12 +321,15 @@ class LocalCRMClient:
 
 
 # ---------------------------------------------------------------------------
-# Factory do cliente (Mantém suporte retrocompatível)
+# Factory do cliente (Multi-Tenant)
 # ---------------------------------------------------------------------------
 
-def CRMClient() -> LocalCRMClient:
+def CRMClient(tenant_id: Optional[int] = None) -> LocalCRMClient:
     """
-    Retorna a instância do cliente local próprio.
-    Ignora opções antigas de CRM externo.
+    Retorna a instância do cliente CRM local próprio.
+    
+    Args:
+        tenant_id: ID do tenant para isolar as operações via RLS.
+                   Se omitido, usa o ContextVar current_tenant_id do middleware.
     """
-    return LocalCRMClient()
+    return LocalCRMClient(tenant_id=tenant_id)

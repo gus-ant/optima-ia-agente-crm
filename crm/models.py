@@ -2,86 +2,222 @@
 crm/models.py
 -------------
 Modelos relacionais do CRM Próprio Local usando SQLAlchemy 2.0.
+Arquitetura Multi-Tenant com chave tenant_id + Row Level Security (RLS) no PostgreSQL.
 """
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from enum import Enum as PyEnum
 from typing import List, Optional
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    JSON,
+    Enum,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from crm.database import Base
 
 
-class Contato(Base):
+# ---------------------------------------------------------------------------
+# Tabela Global: Tenants (visível sem RLS — gerenciada pelo Master)
+# ---------------------------------------------------------------------------
+
+class TenantStatus(str, PyEnum):
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
+    TRIAL = "trial"
+    CANCELLED = "cancelled"
+
+
+class TenantPlan(str, PyEnum):
+    BASIC = "basic"        # GPT-3.5, sem RAG
+    PRO = "pro"            # GPT-4o, RAG habilitado
+    ENTERPRISE = "enterprise"  # GPT-4o + modelos customizados
+
+
+class Tenant(Base):
     """
-    Representa o contato do lead/cliente qualificado via WhatsApp.
+    Representa uma empresa/cliente que usa a plataforma Óptima IA.
+    Tabela global — NOT protegida por RLS (apenas o Master a acessa).
     """
-    __tablename__ = "contatos"
+    __tablename__ = "tenants"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    whatsapp_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
-    nome: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    data_criacao: Mapped[datetime] = mapped_column(
-        DateTime, 
-        default=lambda: datetime.now(timezone.utc)
+    slug: Mapped[str] = mapped_column(String(63), unique=True, nullable=False, index=True)
+    nome: Mapped[str] = mapped_column(String(200), nullable=False)
+    status: Mapped[str] = mapped_column(
+        Enum(TenantStatus, name="tenant_status_enum"),
+        default=TenantStatus.TRIAL,
+        nullable=False,
+    )
+    plano: Mapped[str] = mapped_column(
+        Enum(TenantPlan, name="tenant_plan_enum"),
+        default=TenantPlan.BASIC,
+        nullable=False,
+    )
+    # Configurações individuais por tenant (prompt, temperatura, etc.)
+    config: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    criado_em: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    atualizado_em: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
     # Relacionamentos
-    negocios: Mapped[List[Negocio]] = relationship(
-        "Negocio", 
-        back_populates="contato", 
-        cascade="all, delete-orphan"
+    contatos: Mapped[List[Contato]] = relationship(
+        "Contato", back_populates="tenant", cascade="all, delete-orphan"
     )
-    atividades: Mapped[List[Atividade]] = relationship(
-        "Atividade", 
-        back_populates="contato", 
-        cascade="all, delete-orphan"
+    agent_configs: Mapped[List[AgentConfig]] = relationship(
+        "AgentConfig", back_populates="tenant", cascade="all, delete-orphan"
     )
 
     def to_dict(self) -> dict:
         return {
             "id": self.id,
+            "slug": self.slug,
+            "nome": self.nome,
+            "status": self.status,
+            "plano": self.plano,
+            "config": self.config,
+            "criado_em": self.criado_em.isoformat() if self.criado_em else None,
+        }
+
+
+# ---------------------------------------------------------------------------
+# Tabela: AgentConfig (configuração do agente por tenant)
+# Protegida por RLS
+# ---------------------------------------------------------------------------
+
+class AgentConfig(Base):
+    """
+    Configuração do agente IA para cada tenant.
+    Permite personalização do system prompt, LLM e comportamento.
+    """
+    __tablename__ = "agent_configs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    nome_agente: Mapped[str] = mapped_column(String(100), default="Lara", nullable=False)
+    system_prompt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # LLM override: se None, usa o default do plano
+    llm_model: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    temperatura: Mapped[float] = mapped_column(Float, default=0.3, nullable=False)
+    # Número WhatsApp do atendente humano para transbordo
+    human_agent_whatsapp: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    ativo: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    criado_em: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+
+    # Relacionamento
+    tenant: Mapped[Tenant] = relationship("Tenant", back_populates="agent_configs")
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "tenant_id": self.tenant_id,
+            "nome_agente": self.nome_agente,
+            "llm_model": self.llm_model,
+            "temperatura": self.temperatura,
+            "human_agent_whatsapp": self.human_agent_whatsapp,
+            "ativo": self.ativo,
+        }
+
+
+# ---------------------------------------------------------------------------
+# Tabela: Contatos (protegida por RLS — filtra por tenant_id)
+# ---------------------------------------------------------------------------
+
+class Contato(Base):
+    """
+    Representa o contato do lead/cliente qualificado via WhatsApp.
+    Multi-tenant: cada registro pertence a um tenant via tenant_id.
+    """
+    __tablename__ = "contatos"
+    __table_args__ = (
+        # Garante que whatsapp_id é único dentro do tenant
+        UniqueConstraint("tenant_id", "whatsapp_id", name="uq_contatos_tenant_whatsapp"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    whatsapp_id: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    nome: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    data_criacao: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+
+    # Relacionamentos
+    tenant: Mapped[Tenant] = relationship("Tenant", back_populates="contatos")
+    negocios: Mapped[List[Negocio]] = relationship(
+        "Negocio", back_populates="contato", cascade="all, delete-orphan"
+    )
+    atividades: Mapped[List[Atividade]] = relationship(
+        "Atividade", back_populates="contato", cascade="all, delete-orphan"
+    )
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "tenant_id": self.tenant_id,
             "whatsapp_id": self.whatsapp_id,
             "nome": self.nome,
             "data_criacao": self.data_criacao.isoformat() if self.data_criacao else None,
         }
 
 
+# ---------------------------------------------------------------------------
+# Tabela: Negocios (protegida por RLS indiretamente via contato.tenant_id)
+# ---------------------------------------------------------------------------
+
 class Negocio(Base):
     """
     Representa um negócio (Deal/Oportunidade) vinculado a um contato.
+    Herda isolamento multi-tenant via JOIN com contatos.tenant_id.
     """
     __tablename__ = "negocios"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     contato_id: Mapped[int] = mapped_column(
-        Integer, 
-        ForeignKey("contatos.id", ondelete="CASCADE"), 
-        nullable=False
+        Integer,
+        ForeignKey("contatos.id", ondelete="CASCADE"),
+        nullable=False,
     )
-    
+
     # Detalhes extraídos pelo Agente
     tipo_evento: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     data_evento: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # YYYY-MM-DD ou textual
     orcamento_estimado: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    
+
     # Controle de funil: 'NOVO', 'EM_QUALIFICACAO', 'ALINHAMENTO', 'PRONTO_PARA_HUMANO'
     etapa_funil: Mapped[str] = mapped_column(
-        String(50), 
-        default="NOVO", 
-        nullable=False
+        String(50), default="NOVO", nullable=False
     )
-    
-    # Campo para guardar observações gerais extraídas (ex: estilo, flores, local, etc)
+
+    # Notas geradas pelo agente (campos não estruturados)
     notas_agente: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    
+
     atualizado_em: Mapped[datetime] = mapped_column(
-        DateTime, 
+        DateTime,
         default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc)
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
     # Relacionamentos
@@ -100,17 +236,22 @@ class Negocio(Base):
         }
 
 
+# ---------------------------------------------------------------------------
+# Tabela: Atividades (protegida por RLS indiretamente)
+# ---------------------------------------------------------------------------
+
 class Atividade(Base):
     """
     Registra o histórico de interações (mensagens enviadas e recebidas) para auditoria.
+    Herda isolamento multi-tenant via JOIN com contatos.tenant_id.
     """
     __tablename__ = "atividades"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     contato_id: Mapped[int] = mapped_column(
-        Integer, 
-        ForeignKey("contatos.id", ondelete="CASCADE"), 
-        nullable=False
+        Integer,
+        ForeignKey("contatos.id", ondelete="CASCADE"),
+        nullable=False,
     )
     direcao: Mapped[str] = mapped_column(String(20), nullable=False)  # 'inbound' ou 'outbound'
     conteudo: Mapped[str] = mapped_column(Text, nullable=False)

@@ -37,6 +37,8 @@ services:
       POSTGRES_DB: optimacrm
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Monta scripts SQL para execução na inicialização do container
+      - ./migrations:/docker-entrypoint-initdb.d:ro
     networks:
       - optima-net
     healthcheck:

@@ -9,6 +9,11 @@ Meta Cloud API:
 
 Evolution API (self-hosted):
   POST /webhook/evolution  — evento de mensagem recebida
+
+Multi-Tenant:
+  - tenant_id é resolvido pelo TenantMiddleware e injetado em request.state
+  - thread_id do LangGraph usa o formato "{tenant_id}:{phone}" para isolamento
+  - get_tenant_db_session() ativa o RLS automático por sessão de banco
 """
 
 from __future__ import annotations
@@ -19,10 +24,10 @@ import json
 import logging
 import os
 from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request, Response
 from langchain_core.messages import HumanMessage
-from pydantic import BaseModel
 
 from agent.graph import get_graph
 from memory.store import get_session_state, save_session_state
@@ -68,8 +73,14 @@ async def meta_receive(request: Request, background_tasks: BackgroundTasks):
     payload = json.loads(body)
     messages = _extract_meta_messages(payload)
 
+    # Extrai tenant_id do state injetado pelo TenantMiddleware
+    tenant_id: Optional[int] = getattr(request.state, "tenant_id", None)
+    tenant_slug: Optional[str] = getattr(request.state, "tenant_slug", None)
+
     for msg in messages:
-        background_tasks.add_task(process_incoming_message, msg)
+        background_tasks.add_task(
+            process_incoming_message, msg, tenant_id=tenant_id, tenant_slug=tenant_slug
+        )
 
     return {"status": "ok", "processed": len(messages)}
 
@@ -84,8 +95,14 @@ async def evolution_receive(request: Request, background_tasks: BackgroundTasks)
     payload = await request.json()
 
     msg = _extract_evolution_message(payload)
+
+    tenant_id: Optional[int] = getattr(request.state, "tenant_id", None)
+    tenant_slug: Optional[str] = getattr(request.state, "tenant_slug", None)
+
     if msg:
-        background_tasks.add_task(process_incoming_message, msg)
+        background_tasks.add_task(
+            process_incoming_message, msg, tenant_id=tenant_id, tenant_slug=tenant_slug
+        )
 
     return {"status": "ok"}
 
@@ -94,27 +111,43 @@ async def evolution_receive(request: Request, background_tasks: BackgroundTasks)
 # Core: processar mensagem recebida
 # ---------------------------------------------------------------------------
 
-async def process_incoming_message(msg: dict):
+async def process_incoming_message(
+    msg: dict,
+    tenant_id: Optional[int] = None,
+    tenant_slug: Optional[str] = None,
+):
     """
     Encaminha a mensagem ao grafo LangGraph e persiste o estado atualizado.
 
     Args:
         msg: dict com keys: from_number, text, media_url, timestamp
+        tenant_id: ID do tenant resolvido pelo middleware
+        tenant_slug: Slug do tenant para logs e identificação
     """
     phone = msg["from_number"]
     text = msg.get("text", "")
     timestamp = msg.get("timestamp", datetime.now(timezone.utc).isoformat())
 
-    logger.info("Processing message from %s: %s chars", phone, len(text))
+    # Thread ID composto garante isolamento do checkpointer LangGraph por tenant
+    # Formato: "{tenant_id}:{phone}" — evita colisão entre tenants diferentes
+    thread_prefix = f"{tenant_id}:" if tenant_id else ""
+    thread_id = f"{thread_prefix}{phone}"
+
+    logger.info(
+        "Processing message | tenant=%s phone=%s chars=%d",
+        tenant_slug or "dev",
+        phone,
+        len(text),
+    )
 
     # Recupera estado existente da sessão (ou inicializa novo)
-    state = await get_session_state(phone)
+    state = await get_session_state(thread_id)
 
     # Adiciona mensagem do cliente ao histórico
     new_message = HumanMessage(content=text, additional_kwargs={"timestamp": timestamp})
 
     graph = get_graph()
-    config = {"configurable": {"thread_id": phone}}
+    config = {"configurable": {"thread_id": thread_id}}
 
     try:
         result = await graph.ainvoke(
@@ -122,14 +155,27 @@ async def process_incoming_message(msg: dict):
                 **state,
                 "messages": [new_message],
                 "session_id": phone,
+                "tenant_id": tenant_id,
+                "tenant_slug": tenant_slug,
             },
             config=config,
         )
-        await save_session_state(phone, result)
-        logger.info("Message processed for %s — stage: %s", phone, result.get("pipeline_stage"))
+        await save_session_state(thread_id, result)
+        logger.info(
+            "Message processed | tenant=%s phone=%s stage=%s",
+            tenant_slug or "dev",
+            phone,
+            result.get("pipeline_stage"),
+        )
 
     except Exception as exc:
-        logger.error("Error processing message from %s: %s", phone, exc, exc_info=True)
+        logger.error(
+            "Error processing message | tenant=%s phone=%s error=%s",
+            tenant_slug or "dev",
+            phone,
+            exc,
+            exc_info=True,
+        )
 
 
 # ---------------------------------------------------------------------------

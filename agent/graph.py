@@ -4,7 +4,7 @@ agent/graph.py
 Monta e compila o grafo LangGraph do agente Lara.
 
 Fluxo principal:
-  receive_message → call_llm → [tool_executor?] → sync_crm → [handoff?] → END
+  receive_message → load_tenant_config → call_llm → [tool_executor?] → sync_crm → [handoff?] → END
 
 Nós condicionais:
   - Se o LLM retornou tool_calls → vai para tool_executor
@@ -22,6 +22,7 @@ from langgraph.graph import END, START, StateGraph
 from agent.nodes import (
     node_call_llm,
     node_handoff,
+    node_load_tenant_config,
     node_receive_message,
     node_sync_crm,
     node_tool_executor,
@@ -77,6 +78,7 @@ def build_graph(checkpointer=None) -> StateGraph:
 
     # Adiciona nós
     builder.add_node("receive_message", node_receive_message)
+    builder.add_node("load_tenant_config", node_load_tenant_config)  # [multi-tenant]
     builder.add_node("call_llm", node_call_llm)
     builder.add_node("tool_executor", node_tool_executor)
     builder.add_node("sync_crm", node_sync_crm)
@@ -84,7 +86,8 @@ def build_graph(checkpointer=None) -> StateGraph:
 
     # Edges fixos
     builder.add_edge(START, "receive_message")
-    builder.add_edge("receive_message", "call_llm")
+    builder.add_edge("receive_message", "load_tenant_config")   # carrega config 1x por sessão
+    builder.add_edge("load_tenant_config", "call_llm")
     builder.add_edge("tool_executor", "sync_crm")   # após tools, sempre sincroniza
     builder.add_edge("handoff", END)
 
