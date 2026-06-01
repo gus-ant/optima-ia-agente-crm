@@ -82,7 +82,7 @@ async def node_load_tenant_config(state: AgentState) -> dict[str, Any]:
 # Node: chamar o LLM (Lara)
 # ---------------------------------------------------------------------------
 
-def node_call_llm(state: AgentState) -> dict[str, Any]:
+async def node_call_llm(state: AgentState) -> dict[str, Any]:
     """
     Invoca o LLM com o system prompt + histórico e retorna a resposta da Lara.
     Também extrai o bloco <extraction> JSON embutido na resposta.
@@ -92,7 +92,7 @@ def node_call_llm(state: AgentState) -> dict[str, Any]:
     from agent.llm_gateway import get_llm_for_tenant, get_system_prompt_for_tenant
     from agent.prompts import EXTRACTION_INSTRUCTION
 
-    llm = get_llm_for_tenant(state)
+    llm = await get_llm_for_tenant(state)
     system_prompt = get_system_prompt_for_tenant(state)
 
     messages = [
@@ -100,7 +100,7 @@ def node_call_llm(state: AgentState) -> dict[str, Any]:
         *state["messages"],
     ]
 
-    response: AIMessage = llm.invoke(messages)
+    response: AIMessage = await llm.ainvoke(messages)
     logger.debug("LLM response: %s", response.content[:120])
 
     # Extrai JSON de extração embutido na resposta

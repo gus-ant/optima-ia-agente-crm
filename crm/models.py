@@ -140,6 +140,69 @@ class AgentConfig(Base):
 
 
 # ---------------------------------------------------------------------------
+# Tabela: KnowledgeDocument (RAG Self-Service)
+# Protegida por RLS indiretamente ou na tabela e vectorstore
+# ---------------------------------------------------------------------------
+
+class KnowledgeDocument(Base):
+    """
+    Rastreia os documentos enviados pelo tenant para compor a base de conhecimento RAG.
+    """
+    __tablename__ = "knowledge_documents"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="processing", nullable=False)
+    criado_em: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    atualizado_em: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    tenant: Mapped[Tenant] = relationship("Tenant")
+
+
+# ---------------------------------------------------------------------------
+# Tabela: TenantMCPServer (Integração Dinâmica de Ferramentas)
+# Protegida por RLS
+# ---------------------------------------------------------------------------
+
+class TenantMCPServer(Base):
+    """
+    Configurações de servidores MCP conectados por tenant.
+    Permite descobrir dinamicamente tools externas (ERPs, agendas, CRMs).
+    """
+    __tablename__ = "tenant_mcp_servers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    transport_type: Mapped[str] = mapped_column(String(50), default="stdio", nullable=False) # stdio ou sse
+    url_or_command: Mapped[str] = mapped_column(String(255), nullable=False)
+    env_config: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    ativo: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    criado_em: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    atualizado_em: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    tenant: Mapped[Tenant] = relationship("Tenant")
+
+
+# ---------------------------------------------------------------------------
 # Tabela: Contatos (protegida por RLS — filtra por tenant_id)
 # ---------------------------------------------------------------------------
 

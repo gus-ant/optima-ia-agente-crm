@@ -43,7 +43,7 @@ _PLAN_MODEL_MAP = {
 _FALLBACK_MODEL = "gpt-3.5-turbo"
 
 
-def get_llm_for_tenant(state: "AgentState", bind_tools: bool = True) -> ChatOpenAI:
+async def get_llm_for_tenant(state: "AgentState", bind_tools: bool = True) -> ChatOpenAI:
     """
     Retorna o LLM correto para o tenant com base no plano e configuração.
 
@@ -61,6 +61,7 @@ def get_llm_for_tenant(state: "AgentState", bind_tools: bool = True) -> ChatOpen
         ChatOpenAI com ou sem tools vinculadas.
     """
     from agent.tools import ALL_TOOLS
+    from agent.mcp_client import get_mcp_tools_for_tenant
 
     agent_config = state.get("agent_config") or {}
     plano = agent_config.get("plano", "basic")
@@ -74,9 +75,10 @@ def get_llm_for_tenant(state: "AgentState", bind_tools: bool = True) -> ChatOpen
         or _FALLBACK_MODEL                               # 4. Hardcoded fallback
     )
 
+    tenant_id = state.get("tenant_id")
     logger.debug(
         "LLMGateway: tenant_id=%s plano=%s model=%s temperatura=%.1f",
-        state.get("tenant_id"),
+        tenant_id,
         plano,
         model,
         temperatura,
@@ -85,7 +87,15 @@ def get_llm_for_tenant(state: "AgentState", bind_tools: bool = True) -> ChatOpen
     llm = ChatOpenAI(model=model, temperature=temperatura)
 
     if bind_tools:
-        return llm.bind_tools(ALL_TOOLS)
+        # Carrega ferramentas do MCP para o tenant
+        dynamic_tools = []
+        if tenant_id:
+            try:
+                dynamic_tools = await get_mcp_tools_for_tenant(tenant_id)
+            except Exception as e:
+                logger.error("Erro ao carregar MCP tools para tenant %s: %s", tenant_id, e)
+        
+        return llm.bind_tools(ALL_TOOLS + dynamic_tools)
 
     return llm
 

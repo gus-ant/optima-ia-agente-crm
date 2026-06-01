@@ -208,11 +208,11 @@ async def test_graph_first_message(base_state):
     )
 
     with (
-        patch("agent.nodes._get_llm") as mock_llm_factory,
+        patch("agent.llm_gateway.get_llm_for_tenant", new_callable=AsyncMock) as mock_llm_factory,
         patch("agent.nodes.node_sync_crm", return_value={}),
     ):
-        mock_llm = MagicMock()
-        mock_llm.invoke.return_value = mock_response
+        mock_llm = AsyncMock()
+        mock_llm.ainvoke.return_value = mock_response
         mock_llm_factory.return_value = mock_llm
 
         graph = build_graph()

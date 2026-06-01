@@ -23,7 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from api.routers import health, webhook, dashboard
+from api.routers import health, webhook, dashboard, knowledge
 from api.middleware import TenantMiddleware
 
 logger = logging.getLogger(__name__)
@@ -77,6 +77,7 @@ app.add_middleware(TenantMiddleware)
 # Routers
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(webhook.router, prefix="/webhook", tags=["webhook"])
+app.include_router(knowledge.router, prefix="/knowledge", tags=["knowledge"])
 app.include_router(dashboard.router)
 
 # Serve static dashboard files

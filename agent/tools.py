@@ -445,6 +445,32 @@ async def listar_agendamentos_disponiveis(
         return {"sucesso": False, "erro": str(exc)}
 
 
+@tool
+async def search_knowledge_base(query: str, tenant_id: int) -> dict:
+    """
+    Busca informações na base de conhecimento (RAG) do tenant.
+    Use esta ferramenta para responder perguntas sobre manuais, catálogos ou regras do negócio.
+
+    Args:
+        query: A pergunta ou termo a ser buscado.
+        tenant_id: ID do tenant (injetado automaticamente pelo sistema, repasse o que está no estado).
+
+    Returns:
+        dict com os textos mais relevantes encontrados.
+    """
+    from agent.vector_store import search_knowledge
+    try:
+        docs = await search_knowledge(query=query, tenant_id=tenant_id, k=3)
+        if not docs:
+            return {"resultado": "Nenhuma informação relevante encontrada na base de conhecimento."}
+        
+        # Junta o conteúdo dos documentos
+        context = "\n\n---\n\n".join(doc.page_content for doc in docs)
+        return {"resultado": context}
+    except Exception as exc:
+        logger.error("Erro na busca RAG: %s", exc)
+        return {"erro": str(exc)}
+
 # Registro de todas as tools disponíveis para bind ao LLM
 # Note: LangChain detecta se a tool é síncrona ou assíncrona automaticamente.
 ALL_TOOLS = [
@@ -459,4 +485,6 @@ ALL_TOOLS = [
     agendar_atendimento,
     confirmar_agendamento,
     listar_agendamentos_disponiveis,
+    # RAG
+    search_knowledge_base,
 ]
