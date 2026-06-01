@@ -72,20 +72,22 @@ async def test_local_crm_flow():
         nome="Gustavo Teste",
     )
     assert res_create["is_new"] is True
-    assert res_create["contact_id"] == "1"
-    assert res_create["deal_id"] == "1"
+    contact_id = res_create["contact_id"]
+    deal_id = res_create["deal_id"]
+    assert contact_id is not None
+    assert deal_id is not None
 
     # 2. Re-busca do mesmo contato (deve retornar is_new=False e manter IDs)
     res_get = await client.get_or_create_contato(
         whatsapp_id="5511999998888",
     )
     assert res_get["is_new"] is False
-    assert res_get["contact_id"] == "1"
-    assert res_get["deal_id"] == "1"
+    assert res_get["contact_id"] == contact_id
+    assert res_get["deal_id"] == deal_id
 
     # 3. Atualização dos campos do negócio
     res_update = await client.update_contact_data(
-        contact_id="1",
+        contact_id=contact_id,
         fields={
             "lead": {"nome": "Gustavo Editado", "instagram": "@gustavo"},
             "evento": {
@@ -104,7 +106,7 @@ async def test_local_crm_flow():
     assert "Jardim" in res_update["negocio"]["notas_agente"]
 
     # 4. Avanço do pipeline / etapa de funil
-    res_stage = await client.update_etapa_funil(negocio_id=1, nova_etapa="em_qualificacao")
+    res_stage = await client.update_etapa_funil(negocio_id=int(deal_id), nova_etapa="em_qualificacao")
     assert res_stage["status"] == "success"
     assert res_stage["etapa_funil"] == "EM_QUALIFICACAO"
 

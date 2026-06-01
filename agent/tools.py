@@ -191,6 +191,260 @@ def send_whatsapp_message(to: str, text: str) -> dict:
     return result
 
 
+# ---------------------------------------------------------------------------
+# Agendamento Tools (v2.0)
+# ---------------------------------------------------------------------------
+
+@tool
+async def verificar_disponibilidade(
+    data: str,
+    hora_inicio: str,
+    duracao_minutos: int = 60,
+) -> dict:
+    """
+    Verifica disponibilidade de um horário para agendamento.
+    Se não disponível, retorna próximas 3 opções.
+
+    Args:
+        data: Data em formato YYYY-MM-DD (ex: '2026-06-15')
+        hora_inicio: Hora em formato HH:MM (ex: '14:30')
+        duracao_minutos: 40 (consulta) ou 60 (atendimento)
+
+    Returns:
+        dict com 'disponivel' (bool), 'motivo' se não disponível,
+        e 'proximas_opcoes' se não tiver o horário desejado.
+    """
+    from datetime import datetime
+    from crm.database import get_db_session
+    from crm.agenda_rules import validar_disponibilidade, get_slots_disponiveis
+
+    try:
+        # Parse data/hora
+        data_str = f"{data}T{hora_inicio}:00"
+        data_hora = datetime.fromisoformat(data_str)
+
+        async with get_db_session() as session:
+            valido, erro = await validar_disponibilidade(
+                session, data_hora, duracao_minutos
+            )
+
+            if valido:
+                return {
+                    "disponivel": True,
+                    "data": data,
+                    "hora": hora_inicio,
+                    "duracao_minutos": duracao_minutos,
+                }
+
+            # Retornar próximas opções
+            proximos_slots = await get_slots_disponiveis(
+                session, data_hora, num_opcoes=3, duracao_minutos=duracao_minutos
+            )
+
+            return {
+                "disponivel": False,
+                "motivo": erro,
+                "proximas_opcoes": proximos_slots[:3],
+            }
+
+    except Exception as exc:
+        logger.error("Erro ao verificar disponibilidade: %s", exc, exc_info=True)
+        return {"disponivel": False, "motivo": f"Erro: {str(exc)}"}
+
+
+@tool
+async def agendar_atendimento(
+    contact_id: str,
+    negocio_id: str,
+    data: str,
+    hora: str,
+    tipo_agendamento: str = "consulta_inicial",
+    local: str = "Presencial",
+    observacoes: str = "",
+) -> dict:
+    """
+    Cria um agendamento para o cliente.
+    O agendamento é criado mas REQUER confirmação antes de ser ativado.
+
+    Args:
+        contact_id: ID do contato no CRM
+        negocio_id: ID do negócio/deal vinculado
+        data: Data em formato YYYY-MM-DD
+        hora: Hora em formato HH:MM
+        tipo_agendamento: 'consulta_inicial' | 'visita_local' | 'apresentacao_orcamento'
+        local: Endereço ou 'Online'
+        observacoes: Notas adicionais
+
+    Returns:
+        dict com agendamento criado e link de confirmação.
+    """
+    from datetime import datetime
+    from crm.database import get_db_session
+    from crm.models import Agendamento
+    from crm.agenda_rules import validar_disponibilidade, formatar_agendamento_para_mensagem
+
+    try:
+        # Parse data/hora
+        data_str = f"{data}T{hora}:00"
+        data_hora = datetime.fromisoformat(data_str)
+
+        async with get_db_session() as session:
+            # Validar slot
+            valido, erro = await validar_disponibilidade(session, data_hora, duracao=60)
+            if not valido:
+                return {"sucesso": False, "erro": erro}
+
+            # Criar agendamento (não confirmado)
+            agendamento = Agendamento(
+                negocio_id=int(negocio_id),
+                contato_id=int(contact_id),
+                data_agendamento=data_hora,
+                duracao_minutos=60,
+                tipo_agendamento=tipo_agendamento,
+                local_atendimento=local,
+                observacoes=observacoes or None,
+                confirmado=False,  # Aguardando confirmação
+            )
+
+            session.add(agendamento)
+            await session.commit()
+            await session.refresh(agendamento)
+
+            # Formatar mensagem
+            msg_confirmacao = formatar_agendamento_para_mensagem(
+                data_hora, tipo_agendamento, local
+            )
+
+            logger.info(
+                "Agendamento criado para contato %s: %s",
+                contact_id,
+                agendamento.id,
+            )
+
+            return {
+                "sucesso": True,
+                "agendamento_id": agendamento.id,
+                "status": "pendente_confirmacao",
+                "mensagem_cliente": msg_confirmacao,
+                "link_confirmacao": f"https://seu-dominio.com/agendamento/{agendamento.id}/confirmar",
+            }
+
+    except Exception as exc:
+        logger.error("Erro ao agendar: %s", exc, exc_info=True)
+        return {"sucesso": False, "erro": str(exc)}
+
+
+@tool
+async def confirmar_agendamento(
+    agendamento_id: str,
+    confirmado: bool = True,
+) -> dict:
+    """
+    Cliente confirma ou cancela um agendamento.
+
+    Args:
+        agendamento_id: ID do agendamento
+        confirmado: True para confirmar, False para cancelar
+
+    Returns:
+        dict com status da confirmação.
+    """
+    from datetime import datetime
+    from crm.database import get_db_session
+    from crm.models import Agendamento
+    from sqlalchemy import select
+
+    try:
+        async with get_db_session() as session:
+            stmt = select(Agendamento).where(Agendamento.id == int(agendamento_id))
+            result = await session.execute(stmt)
+            agendamento = result.scalar_one_or_none()
+
+            if not agendamento:
+                return {"sucesso": False, "erro": "Agendamento não encontrado"}
+
+            if confirmado:
+                agendamento.confirmado = True
+                agendamento.data_confirmacao = datetime.now()
+                status = "confirmado"
+                msg = "✅ Agendamento confirmado! Até breve!"
+            else:
+                agendamento.cancelado_em = datetime.now()
+                agendamento.motivo_cancelamento = "Cancelado pelo cliente"
+                status = "cancelado"
+                msg = "❌ Agendamento cancelado. Caso queira remarcar, é só falar!"
+
+            await session.commit()
+
+            logger.info(f"Agendamento {agendamento_id} {status}")
+
+            return {
+                "sucesso": True,
+                "agendamento_id": agendamento_id,
+                "status": status,
+                "mensagem": msg,
+            }
+
+    except Exception as exc:
+        logger.error("Erro ao confirmar agendamento: %s", exc, exc_info=True)
+        return {"sucesso": False, "erro": str(exc)}
+
+
+@tool
+async def listar_agendamentos_disponiveis(
+    data_inicio: str = None,
+    dias_afrente: int = 7,
+    num_opcoes: int = 5,
+) -> dict:
+    """
+    Lista os próximos horários disponíveis para agendamento.
+
+    Args:
+        data_inicio: Data inicial em YYYY-MM-DD (default: hoje)
+        dias_afrente: Quantos dias afrente buscar (default: 7)
+        num_opcoes: Quantas opções retornar (default: 5)
+
+    Returns:
+        dict com lista de slots disponíveis em formato amigável.
+    """
+    from datetime import datetime, timedelta
+    from crm.database import get_db_session
+    from crm.agenda_rules import get_slots_disponiveis
+
+    try:
+        if data_inicio:
+            data = datetime.fromisoformat(data_inicio)
+        else:
+            data = datetime.now() + timedelta(days=1)
+
+        async with get_db_session() as session:
+            slots = await get_slots_disponiveis(
+                session, data, num_opcoes=num_opcoes
+            )
+
+            # Formatar para mensagem WhatsApp
+            opcoes_formatadas = []
+            for i, slot in enumerate(slots, 1):
+                opcoes_formatadas.append(
+                    f"{i}️⃣ {slot['data']} às {slot['hora']} ({slot['dia_semana']})"
+                )
+
+            msg = "📅 *Próximas datas disponíveis:*\n\n" + "\n".join(
+                opcoes_formatadas
+            )
+
+            return {
+                "sucesso": True,
+                "total_opcoes": len(slots),
+                "slots": slots,
+                "mensagem_cliente": msg,
+            }
+
+    except Exception as exc:
+        logger.error("Erro ao listar agendamentos: %s", exc, exc_info=True)
+        return {"sucesso": False, "erro": str(exc)}
+
+
 # Registro de todas as tools disponíveis para bind ao LLM
 # Note: LangChain detecta se a tool é síncrona ou assíncrona automaticamente.
 ALL_TOOLS = [
@@ -200,4 +454,9 @@ ALL_TOOLS = [
     notify_human_agent,
     log_conversation_message,
     send_whatsapp_message,
+    # Agendamento (v2.0)
+    verificar_disponibilidade,
+    agendar_atendimento,
+    confirmar_agendamento,
+    listar_agendamentos_disponiveis,
 ]
