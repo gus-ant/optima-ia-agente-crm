@@ -39,6 +39,8 @@ _EXEMPT_PREFIXES = (
     "/openapi.json",
     "/redoc",
     "/favicon.ico",
+    "/api/master",
+    "/master",
 )
 
 # Domínio base da plataforma (usado para extração de subdomínio)

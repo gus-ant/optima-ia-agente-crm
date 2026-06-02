@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Panel - Óptima IA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --border: #334155;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Login Overlay */
+        #login-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .login-box {
+            background: var(--bg-card);
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-box h2 {
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-dark);
+            color: var(--text-main);
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 1rem;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+        }
+
+        /* Main Layout */
+        .header {
+            background: var(--bg-card);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+
+        .header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header h1 i {
+            color: var(--primary);
+        }
+
+        .container {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .stat-card .label {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        /* Section Header */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Table */
+        .table-container {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: rgba(15, 23, 42, 0.4);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-active { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .badge-inactive { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-icon {
+            background: transparent;
+            color: var(--text-muted);
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+
+        .btn-icon:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 500px;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h3 {
+            font-size: 1.25rem;
+        }
+
+        .close-modal {
+            background: none;
+            color: var(--text-muted);
+            padding: 0;
+            font-size: 1.25rem;
+        }
+
+        .close-modal:hover {
+            color: var(--text-main);
+            background: none;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-dark);
+            color: var(--text-main);
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-dark);
+            color: var(--text-main);
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transform: translateY(150%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 2000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+        }
+
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.success { border-left: 4px solid var(--success); }
+    </style>
+</head>
+<body>
+
+    <!-- Login Overlay -->
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2>Master Panel</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.875rem;">Acesso restrito a administradores da plataforma</p>
+            <input type="password" id="master-key-input" placeholder="Insira a Master Key" onkeypress="if(event.key === 'Enter') login()">
+            <button onclick="login()" style="width: 100%;">Entrar <i class="fas fa-arrow-right ml-2"></i></button>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" style="display: none;">
+        <header class="header">
+            <h1><i class="fas fa-cube"></i> Óptima IA Master</h1>
+            <button onclick="logout()" class="btn-icon"><i class="fas fa-sign-out-alt"></i> Sair</button>
+        </header>
+
+        <main class="container">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="label">Total de Tenants</span>
+                    <span class="value" id="stat-total">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="label">Tenants Ativos</span>
+                    <span class="value" id="stat-active" style="color: var(--success);">0</span>
+                </div>
+            </div>
+
+            <div class="section-header">
+                <h2><i class="fas fa-users"></i> Tenants (Clientes)</h2>
+                <button onclick="openCreateModal()"><i class="fas fa-plus"></i> Novo Tenant</button>
+            </div>
+
+            <div class="table-container">
+                <table id="tenants-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Slug</th>
+                            <th>Nome</th>
+                            <th>Plano</th>
+                            <th>Status</th>
+                            <th>Criado em</th>
+                            <th style="text-align: right;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tenants-body">
+                        <!-- rows -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Create Tenant Modal -->
+    <div id="create-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Criar Novo Tenant</h3>
+                <button class="close-modal" onclick="closeModal('create-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="create-form" onsubmit="createTenant(event)">
+                <div class="form-group">
+                    <label>Slug (Subdomínio/Identificador)</label>
+                    <input type="text" id="t-slug" required pattern="[a-z0-9-]+" title="Apenas letras minúsculas, números e hífens">
+                </div>
+                <div class="form-group">
+                    <label>Nome do Cliente/Empresa</label>
+                    <input type="text" id="t-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Plano</label>
+                    <select id="t-plan">
+                        <option value="basic">Basic (GPT-3.5)</option>
+                        <option value="pro" selected>Pro (GPT-4o)</option>
+                        <option value="enterprise">Enterprise (Custom)</option>
+                    </select>
+                </div>
+                <button type="submit" style="width: 100%; margin-top: 1rem;">Criar Tenant</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Config Modal -->
+    <div id="config-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Configurações do Agente</h3>
+                <button class="close-modal" onclick="closeModal('config-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="config-form" onsubmit="updateConfig(event)">
+                <input type="hidden" id="c-tenant-id">
+                <div class="form-group">
+                    <label>Modelo LLM (Override)</label>
+                    <input type="text" id="c-model" placeholder="Ex: gpt-4o ou claude-3-5-sonnet-20240620">
+                </div>
+                <div class="form-group">
+                    <label>WhatsApp do Atendente (Transbordo)</label>
+                    <input type="text" id="c-human" placeholder="Ex: 5511999999999">
+                </div>
+                <div class="form-group">
+                    <label>System Prompt Customizado (Opcional)</label>
+                    <textarea id="c-prompt" placeholder="Instruções específicas para este cliente..."></textarea>
+                </div>
+                <button type="submit" style="width: 100%; margin-top: 1rem;">Salvar Configurações</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <i class="fas fa-info-circle icon"></i>
+        <span class="message">Message</span>
+    </div>
+
+    <script>
+        let masterKey = localStorage.getItem('master_key') || '';
+        
+        if (masterKey) {
+            login(masterKey);
+        }
+
+        async function login(storedKey = null) {
+            const key = storedKey || document.getElementById('master-key-input').value;
+            if (!key) return;
+
+            try {
+                const res = await fetch('/api/master/stats', {
+                    headers: { 'X-Master-Key': key }
+                });
+
+                if (res.ok) {
+                    masterKey = key;
+                    localStorage.setItem('master_key', key);
+                    document.getElementById('login-overlay').style.display = 'none';
+                    document.getElementById('app').style.display = 'flex';
+                    
+                    const stats = await res.json();
+                    document.getElementById('stat-total').innerText = stats.total_tenants;
+                    document.getElementById('stat-active').innerText = stats.active_tenants;
+                    
+                    loadTenants();
+                    showToast('Login efetuado com sucesso', 'success');
+                } else {
+                    showToast('Master Key inválida', 'error');
+                    localStorage.removeItem('master_key');
+                    document.getElementById('master-key-input').value = '';
+                }
+            } catch (err) {
+                showToast('Erro de conexão com o servidor', 'error');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('master_key');
+            masterKey = '';
+            document.getElementById('login-overlay').style.display = 'flex';
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('master-key-input').value = '';
+        }
+
+        async function api(path, options = {}) {
+            options.headers = {
+                ...options.headers,
+                'X-Master-Key': masterKey,
+                'Content-Type': 'application/json'
+            };
+            const res = await fetch(`/api/master${path}`, options);
+            if (!res.ok) {
+                if (res.status === 403) logout();
+                const data = await res.json().catch(()=>({}));
+                throw new Error(data.detail || 'Erro na requisição');
+            }
+            return res.json();
+        }
+
+        async function loadTenants() {
+            try {
+                const tenants = await api('/tenants');
+                const tbody = document.getElementById('tenants-body');
+                tbody.innerHTML = '';
+                
+                tenants.forEach(t => {
+                    const date = new Date(t.created_at).toLocaleDateString('pt-BR');
+                    const badgeClass = t.is_active ? 'badge-active' : 'badge-inactive';
+                    const badgeText = t.is_active ? 'Ativo' : 'Inativo';
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>#${t.id}</td>
+                        <td style="font-family: monospace;">${t.slug}</td>
+                        <td style="font-weight: 500;">${t.name}</td>
+                        <td style="text-transform: capitalize;">${t.plan}</td>
+                        <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                        <td style="color: var(--text-muted);">${date}</td>
+                        <td style="text-align: right;" class="actions">
+                            <button class="btn-icon" onclick="toggleActive(${t.id}, ${!t.is_active})" title="${t.is_active ? 'Desativar' : 'Ativar'}">
+                                <i class="fas fa-${t.is_active ? 'ban' : 'check'}"></i>
+                            </button>
+                            <button class="btn-icon" onclick="openConfigModal(${t.id})" title="Configurar Agente">
+                                <i class="fas fa-robot"></i>
+                            </button>
+                            <button class="btn-icon" onclick="deleteTenant(${t.id}, '${t.slug}')" title="Excluir" style="color: var(--danger);">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function openCreateModal() {
+            document.getElementById('create-modal').classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+            if(id === 'create-modal') document.getElementById('create-form').reset();
+            if(id === 'config-modal') document.getElementById('config-form').reset();
+        }
+
+        async function createTenant(e) {
+            e.preventDefault();
+            const data = {
+                slug: document.getElementById('t-slug').value,
+                name: document.getElementById('t-name').value,
+                plan: document.getElementById('t-plan').value,
+                is_active: true
+            };
+
+            try {
+                await api('/tenants', { method: 'POST', body: JSON.stringify(data) });
+                closeModal('create-modal');
+                showToast('Tenant criado com sucesso!', 'success');
+                login(masterKey); // reload stats and list
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function toggleActive(id, newState) {
+            try {
+                await api(`/tenants/${id}`, { method: 'PATCH', body: JSON.stringify({ is_active: newState }) });
+                login(masterKey);
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function deleteTenant(id, slug) {
+            // Em produção seria bom uma rota real de delete, aqui vamos apenas simular ou usar uma rota se implementarmos no backend.
+            // Para o sqlite atual, vamos desativar ou avisar. O backend de master.py não tem o DELETE completo com cascade.
+            // Vou apenas alertar que a função deve ser feita via banco ou desativando.
+            if(confirm(`Tem certeza que deseja desativar permanentemente o tenant ${slug}?`)) {
+                toggleActive(id, false);
+            }
+        }
+        
+        async function openConfigModal(id) {
+            document.getElementById('c-tenant-id').value = id;
+            try {
+                const cfg = await api(`/tenants/${id}/agent-config`);
+                document.getElementById('c-model').value = cfg.llm_model || '';
+                document.getElementById('c-human').value = cfg.human_agent_whatsapp || '';
+                document.getElementById('c-prompt').value = cfg.system_prompt || '';
+                document.getElementById('config-modal').classList.add('active');
+            } catch (err) {
+                showToast('Erro ao carregar configurações', 'error');
+            }
+        }
+        
+        async function updateConfig(e) {
+            e.preventDefault();
+            const id = document.getElementById('c-tenant-id').value;
+            const data = {
+                llm_model: document.getElementById('c-model').value || null,
+                human_agent_whatsapp: document.getElementById('c-human').value || null,
+                system_prompt: document.getElementById('c-prompt').value || null
+            };
+            
+            try {
+                await api(`/tenants/${id}/agent-config`, { method: 'PATCH', body: JSON.stringify(data) });
+                closeModal('config-modal');
+                showToast('Configurações salvas!', 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        let toastTimeout;
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.className = `toast show ${type}`;
+            toast.querySelector('.message').innerText = message;
+            toast.querySelector('.icon').className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

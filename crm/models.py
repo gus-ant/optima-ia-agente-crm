@@ -140,6 +140,32 @@ class AgentConfig(Base):
 
 
 # ---------------------------------------------------------------------------
+# Tabela: MCPServer (servidores MCP associados ao tenant)
+# ---------------------------------------------------------------------------
+
+class MCPServer(Base):
+    """
+    Servidores MCP (Model Context Protocol) configurados para o tenant.
+    """
+    __tablename__ = "mcp_servers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    command: Mapped[str] = mapped_column(String(200), nullable=False)
+    args: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    env: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    
+    criado_em: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+
+    # Relacionamento
+    tenant: Mapped[Tenant] = relationship("Tenant")
+
+# ---------------------------------------------------------------------------
 # Tabela: KnowledgeDocument (RAG Self-Service)
 # Protegida por RLS indiretamente ou na tabela e vectorstore
 # ---------------------------------------------------------------------------

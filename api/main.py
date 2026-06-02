@@ -23,7 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from api.routers import health, webhook, dashboard, knowledge
+from api.routers import health, webhook, dashboard, knowledge, master
 from api.middleware import TenantMiddleware
 
 logger = logging.getLogger(__name__)
@@ -66,7 +66,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.getenv("ALLOWED_ORIGINS", "*").split(","),
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "PUT"],
     allow_headers=["*"],
 )
 
@@ -79,6 +79,7 @@ app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(webhook.router, prefix="/webhook", tags=["webhook"])
 app.include_router(knowledge.router, prefix="/knowledge", tags=["knowledge"])
 app.include_router(dashboard.router)
+app.include_router(master.router)
 
 # Serve static dashboard files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -87,6 +88,11 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 async def serve_dashboard():
     """Retorna o index.html da pasta static para a rota raiz."""
     return FileResponse("static/index.html")
+
+@app.get("/master")
+async def serve_master_dashboard():
+    """Retorna o master.html da pasta static para a rota master."""
+    return FileResponse("static/master.html")
 
 
 if __name__ == "__main__":
