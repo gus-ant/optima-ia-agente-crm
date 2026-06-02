@@ -236,7 +236,7 @@ class LocalCRMClient:
 
         try:
             # Atualiza nome do Contato e localiza o negócio vinculado
-            async with get_db_session() as session:
+            async with get_tenant_db_session(self._tenant_id) as session:
                 c_id = int(contact_id)
                 # Atualiza nome no Contato
                 if nome_lead:
@@ -281,7 +281,7 @@ class LocalCRMClient:
             etapa_db = "EM_QUALIFICACAO"
 
         try:
-            async with get_db_session() as session:
+            async with get_tenant_db_session(self._tenant_id) as session:
                 stmt = select(Negocio).where(Negocio.id == negocio_id)
                 result = await session.execute(stmt)
                 negocio = result.scalar_one_or_none()
@@ -305,7 +305,7 @@ class LocalCRMClient:
         Registra histórico da conversa diretamente no banco de dados local.
         """
         try:
-            async with get_db_session() as session:
+            async with get_tenant_db_session(self._tenant_id) as session:
                 atividade = Atividade(
                     contato_id=contact_id,
                     direcao=direction,

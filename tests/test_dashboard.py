@@ -4,16 +4,29 @@ tests/test_dashboard.py
 Testes para os endpoints do Dashboard.
 """
 
-from __future__ import annotations
+import os
+# Configura o ambiente para usar SQLite em memória antes de qualquer import do DB
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 
 import pytest
 from fastapi.testclient import TestClient
 
 from api.main import app
+from crm.database import Base, engine
+
+
+@pytest.fixture(autouse=True)
+async def setup_db():
+    """Inicializa as tabelas no SQLite em memória antes de cada teste."""
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
 
 @pytest.fixture
-def client():
+def client(setup_db):
     with TestClient(app) as c:
         yield c
 

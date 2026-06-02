@@ -33,6 +33,21 @@ async def setup_db():
     """Inicializa as tabelas no SQLite em memória antes de cada teste."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    
+    # Inserir tenant padrão para os testes passarem
+    from sqlalchemy.ext.asyncio import AsyncSession
+    from crm.models import Tenant, TenantStatus, TenantPlan
+    async with AsyncSession(engine) as session:
+        tenant = Tenant(
+            id=1,
+            slug="test_tenant",
+            nome="Test Tenant",
+            status=TenantStatus.ACTIVE,
+            plano=TenantPlan.PRO,
+        )
+        session.add(tenant)
+        await session.commit()
+        
     yield
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -64,7 +79,7 @@ def base_state() -> dict:
 @pytest.mark.asyncio
 async def test_local_crm_flow():
     """Valida a criação e atualização de contatos e negócios no banco local."""
-    client = LocalCRMClient()
+    client = LocalCRMClient(tenant_id=1)
 
     # 1. Criação do Contato + Negócio automático
     res_create = await client.get_or_create_contato(
