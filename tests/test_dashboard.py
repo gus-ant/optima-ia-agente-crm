@@ -7,6 +7,7 @@ Testes para os endpoints do Dashboard.
 import os
 # Configura o ambiente para usar SQLite em memória antes de qualquer import do DB
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
+os.environ["ENVIRONMENT"] = "development"
 
 import pytest
 from fastapi.testclient import TestClient

@@ -13,7 +13,7 @@ from typing import List, Optional
 
 from sqlalchemy import (
     Boolean,
-    DateTime,
+    DateTime as SADateTime,
     Float,
     ForeignKey,
     Integer,
@@ -26,6 +26,13 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from crm.database import Base
+
+
+class DateTime(SADateTime):
+    """Custom DateTime class that forces timezone=True for PostgreSQL compatibility."""
+    def __init__(self, *args, **kwargs):
+        kwargs["timezone"] = True
+        super().__init__(*args, **kwargs)
 
 
 # ---------------------------------------------------------------------------

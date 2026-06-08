@@ -10,6 +10,8 @@ a partir do subdomínio, header X-Tenant-Slug ou query param tenant_slug.
 """
 
 from __future__ import annotations
+from dotenv import load_dotenv
+load_dotenv()  # Carrega as variáveis do arquivo .env antes de qualquer outra importação ou leitura do ambiente
 
 import hashlib
 import hmac

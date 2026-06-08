@@ -4,6 +4,22 @@ let funnelChartInstance = null;
 let conversionChartInstance = null;
 let allLeads = [];
 
+// Helper to include tenant slug in headers if provided via query parameters or localStorage
+async function fetchWithTenant(url, options = {}) {
+    const urlParams = new URLSearchParams(window.location.search);
+    let tenantSlug = urlParams.get('tenant_slug') || localStorage.getItem('tenant_slug');
+    if (urlParams.get('tenant_slug')) {
+        localStorage.setItem('tenant_slug', urlParams.get('tenant_slug'));
+    }
+    if (tenantSlug) {
+        if (!options.headers) {
+            options.headers = {};
+        }
+        options.headers['X-Tenant-Slug'] = tenantSlug;
+    }
+    return fetch(url, options);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize icons
     lucide.createIcons();
@@ -45,17 +61,17 @@ function switchTab(tabName) {
 // Fetch and load dashboard data
 async function loadDashboardData() {
     try {
-        const statsResponse = await fetch('/api/dashboard/stats');
+        const statsResponse = await fetchWithTenant('/api/dashboard/stats');
         const stats = await statsResponse.json();
         renderStats(stats);
         renderCharts(stats.stages);
 
-        const leadsResponse = await fetch('/api/dashboard/leads');
+        const leadsResponse = await fetchWithTenant('/api/dashboard/leads');
         allLeads = await leadsResponse.json();
         renderLeadsTable(allLeads);
         renderKanban(allLeads);
 
-        const apptsResponse = await fetch('/api/dashboard/appointments');
+        const apptsResponse = await fetchWithTenant('/api/dashboard/appointments');
         const appts = await apptsResponse.json();
         renderAppointments(appts);
         
@@ -303,7 +319,7 @@ async function openLeadChat(contactId, name, phone) {
     `;
 
     try {
-        const response = await fetch(`/api/dashboard/leads/${contactId}/chat`);
+        const response = await fetchWithTenant(`/api/dashboard/leads/${contactId}/chat`);
         const activities = await response.json();
 
         chatContainer.innerHTML = '';
@@ -351,7 +367,7 @@ async function openLeadChat(contactId, name, phone) {
 // Change stage patch endpoint
 async function changeLeadStage(contactId, newStage) {
     try {
-        const response = await fetch(`/api/dashboard/leads/${contactId}/stage`, {
+        const response = await fetchWithTenant(`/api/dashboard/leads/${contactId}/stage`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ stage: newStage })

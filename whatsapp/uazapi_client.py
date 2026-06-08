@@ -44,14 +44,17 @@ class UazAPIClient(BaseWhatsAppClient):
         if not self.instance_id:
             raise ValueError("UAZAPI_INSTANCE_ID não configurada")
 
-        self.base_url = "https://api.uazapi.com/v1"
+        # Permite configurar uma URL base customizada (ex: a instância dedicada do cliente)
+        self.base_url = os.getenv("UAZAPI_BASE_URL", "https://api.uazapi.com/v1")
         self.headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            "token": self.api_key, # Usado pelo uazapiGO/instâncias dedicadas
+            "Authorization": f"Bearer {self.api_key}", # Fallback padrão
             "Content-Type": "application/json",
         }
 
         logger.info(
-            "UazAPI client initialized (instance: %s)",
+            "UazAPI client initialized (base_url: %s, instance: %s)",
+            self.base_url,
             self.instance_id[:8] + "...",
         )
 
@@ -224,10 +227,12 @@ class UazAPIClient(BaseWhatsAppClient):
 
     def check_instance_health(self) -> dict:
         """Verifica saúde da instância."""
+        # Se for a URL dedicada (sem /v1), usa o endpoint singular /instance/status
+        path = "/instance/status" if "api.uazapi.com" not in self.base_url else "/instances/status"
         try:
             with httpx.Client(timeout=10) as client:
                 response = client.get(
-                    f"{self.base_url}/instances/status",
+                    f"{self.base_url}{path}",
                     headers=self.headers,
                 )
             response.raise_for_status()
@@ -238,10 +243,12 @@ class UazAPIClient(BaseWhatsAppClient):
 
     def get_instance_info(self) -> dict:
         """Obtém informações da instância."""
+        # Se for a URL dedicada (sem /v1), usa o endpoint singular /instance/{id}
+        path = f"/instance/{self.instance_id}" if "api.uazapi.com" not in self.base_url else f"/instances/{self.instance_id}"
         try:
             with httpx.Client(timeout=10) as client:
                 response = client.get(
-                    f"{self.base_url}/instances/{self.instance_id}",
+                    f"{self.base_url}{path}",
                     headers=self.headers,
                 )
             response.raise_for_status()

@@ -3,11 +3,13 @@
 
 # --- Framework Web ---
 fastapi>=0.111.0
+python-multipart>=0.0.9
 uvicorn[standard]>=0.29.0
 
 # --- LangChain + LangGraph ---
 langchain>=0.2.0
 langchain-core>=0.2.0
+langchain-community>=0.2.0
 langchain-openai>=0.1.8
 langchain-anthropic>=0.1.15   # opcional — habilitar se usar Claude
 langgraph>=0.1.5
@@ -22,6 +24,8 @@ psycopg2-binary>=2.9.9        # PostgreSQL — para histórico de longo prazo
 sqlalchemy>=2.0.0
 asyncpg>=0.29.0               # Driver assíncrono PostgreSQL
 aiosqlite>=0.20.0             # Driver assíncrono SQLite para testes locais
+langchain-postgres>=0.0.10     # Integração PgVector para LangChain
+pgvector>=0.2.0               # Driver PgVector Python
 
 
 # --- Validação ---

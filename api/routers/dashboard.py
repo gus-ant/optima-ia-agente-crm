@@ -14,7 +14,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import func, select
 
-from crm.database import get_db_session
+from crm.database import get_tenant_db_session
+from crm.tenant import get_current_tenant_id
 from crm.models import Atividade, Contato, Negocio, Agendamento
 
 logger = logging.getLogger(__name__)
@@ -29,24 +30,33 @@ class StageUpdateSchema(BaseModel):
 async def get_dashboard_stats() -> Dict[str, Any]:
     """Retorna estatísticas gerais consolidando leads, estágios do funil e agendamentos."""
     try:
-        async with get_db_session() as session:
+        tenant_id = get_current_tenant_id()
+        async with get_tenant_db_session() as session:
             # Contagem total de contatos
             c_stmt = select(func.count(Contato.id))
+            if tenant_id is not None:
+                c_stmt = c_stmt.where(Contato.tenant_id == tenant_id)
             c_res = await session.execute(c_stmt)
             total_contacts = c_res.scalar() or 0
 
             # Contagem total de negócios
-            n_stmt = select(func.count(Negocio.id))
+            n_stmt = select(func.count(Negocio.id)).join(Contato, Negocio.contato_id == Contato.id)
+            if tenant_id is not None:
+                n_stmt = n_stmt.where(Contato.tenant_id == tenant_id)
             n_res = await session.execute(n_stmt)
             total_deals = n_res.scalar() or 0
 
             # Contagem de agendamentos
-            a_stmt = select(func.count(Agendamento.id))
+            a_stmt = select(func.count(Agendamento.id)).join(Contato, Agendamento.contato_id == Contato.id)
+            if tenant_id is not None:
+                a_stmt = a_stmt.where(Contato.tenant_id == tenant_id)
             a_res = await session.execute(a_stmt)
             total_appointments = a_res.scalar() or 0
 
             # Contagem por estágio de negócios
-            stage_stmt = select(Negocio.etapa_funil, func.count(Negocio.id)).group_by(Negocio.etapa_funil)
+            stage_stmt = select(Negocio.etapa_funil, func.count(Negocio.id)).join(Contato, Negocio.contato_id == Contato.id).group_by(Negocio.etapa_funil)
+            if tenant_id is not None:
+                stage_stmt = stage_stmt.where(Contato.tenant_id == tenant_id)
             stage_res = await session.execute(stage_stmt)
             
             stages = {
@@ -77,8 +87,12 @@ async def get_dashboard_stats() -> Dict[str, Any]:
 async def get_dashboard_leads() -> List[Dict[str, Any]]:
     """Retorna lista de leads contendo dados do Contato e Negócio vinculados."""
     try:
-        async with get_db_session() as session:
-            stmt = select(Contato, Negocio).outerjoin(Negocio, Contato.id == Negocio.contato_id).order_by(Contato.data_criacao.desc())
+        tenant_id = get_current_tenant_id()
+        async with get_tenant_db_session() as session:
+            stmt = select(Contato, Negocio).outerjoin(Negocio, Contato.id == Negocio.contato_id)
+            if tenant_id is not None:
+                stmt = stmt.where(Contato.tenant_id == tenant_id)
+            stmt = stmt.order_by(Contato.data_criacao.desc())
             result = await session.execute(stmt)
             
             leads = []
@@ -99,14 +113,20 @@ async def get_dashboard_leads() -> List[Dict[str, Any]]:
 async def get_lead_chat_history(contact_id: int) -> List[Dict[str, Any]]:
     """Retorna o histórico de atividades e mensagens trocadas com o lead específico."""
     try:
-        async with get_db_session() as session:
+        tenant_id = get_current_tenant_id()
+        async with get_tenant_db_session() as session:
             # Verifica se o contato existe
             c_stmt = select(Contato).where(Contato.id == contact_id)
+            if tenant_id is not None:
+                c_stmt = c_stmt.where(Contato.tenant_id == tenant_id)
             c_res = await session.execute(c_stmt)
             if not c_res.scalar_one_or_none():
                 raise HTTPException(status_code=404, detail="Contato não encontrado")
 
-            stmt = select(Atividade).where(Atividade.contato_id == contact_id).order_by(Atividade.timestamp.asc())
+            stmt = select(Atividade).join(Contato, Atividade.contato_id == Contato.id).where(Atividade.contato_id == contact_id)
+            if tenant_id is not None:
+                stmt = stmt.where(Contato.tenant_id == tenant_id)
+            stmt = stmt.order_by(Atividade.timestamp.asc())
             result = await session.execute(stmt)
             activities = [act.to_dict() for act in result.scalars().all()]
             return activities
@@ -121,8 +141,12 @@ async def get_lead_chat_history(contact_id: int) -> List[Dict[str, Any]]:
 async def get_dashboard_appointments() -> List[Dict[str, Any]]:
     """Retorna lista de todos os agendamentos realizados."""
     try:
-        async with get_db_session() as session:
-            stmt = select(Agendamento, Contato).join(Contato, Agendamento.contato_id == Contato.id).order_by(Agendamento.data_agendamento.asc())
+        tenant_id = get_current_tenant_id()
+        async with get_tenant_db_session() as session:
+            stmt = select(Agendamento, Contato).join(Contato, Agendamento.contato_id == Contato.id)
+            if tenant_id is not None:
+                stmt = stmt.where(Contato.tenant_id == tenant_id)
+            stmt = stmt.order_by(Agendamento.data_agendamento.asc())
             result = await session.execute(stmt)
             
             appointments = []
@@ -143,8 +167,11 @@ async def get_dashboard_appointments() -> List[Dict[str, Any]]:
 async def update_lead_stage(contact_id: int, schema: StageUpdateSchema) -> Dict[str, Any]:
     """Permite alterar manualmente o estágio do negócio de um lead."""
     try:
-        async with get_db_session() as session:
-            stmt = select(Negocio).where(Negocio.contato_id == contact_id)
+        tenant_id = get_current_tenant_id()
+        async with get_tenant_db_session() as session:
+            stmt = select(Negocio).join(Contato, Negocio.contato_id == Contato.id).where(Negocio.contato_id == contact_id)
+            if tenant_id is not None:
+                stmt = stmt.where(Contato.tenant_id == tenant_id)
             result = await session.execute(stmt)
             negocio = result.scalar_one_or_none()
             if not negocio:

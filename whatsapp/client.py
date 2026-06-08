@@ -151,6 +151,5 @@ class EvolutionWhatsAppClient(BaseWhatsAppClient):
 
 def WhatsAppClient() -> BaseWhatsAppClient:
     """Factory que retorna o cliente WhatsApp configurado via env."""
-    if PROVIDER == "evolution":
-        return EvolutionWhatsAppClient()
-    return MetaWhatsAppClient()  # default
+    from whatsapp.provider_config import get_whatsapp_client
+    return get_whatsapp_client()

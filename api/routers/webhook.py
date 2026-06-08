@@ -108,6 +108,50 @@ async def evolution_receive(request: Request, background_tasks: BackgroundTasks)
 
 
 # ---------------------------------------------------------------------------
+# UazAPI — POST
+# ---------------------------------------------------------------------------
+
+@router.post("/uazapi")
+async def uazapi_receive(request: Request, background_tasks: BackgroundTasks):
+    """Recebe eventos de mensagem da UazAPI."""
+    payload = await request.json()
+    logger.debug("Received UazAPI webhook: %s", payload)
+
+    # Verifica se é uma mensagem recebida (RECEIVE_MESSAGE)
+    wook = payload.get("wook")
+    if wook != "RECEIVE_MESSAGE":
+        return {"status": "ignored", "reason": f"Event {wook} is not RECEIVE_MESSAGE"}
+
+    # Extrai dados da mensagem
+    phone = payload.get("phone")
+    text = payload.get("content")
+    msg_type = payload.get("type", "text")
+
+    if not phone or not text:
+        return {"status": "ignored", "reason": "Missing phone or content"}
+
+    # Normaliza mídia se aplicável
+    if msg_type in ("image", "document", "audio", "video"):
+        text = f"[mídia recebida: {msg_type}]"
+
+    msg = {
+        "from_number": phone,
+        "text": text,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+    # Extrai tenant_id do state injetado pelo TenantMiddleware
+    tenant_id: Optional[int] = getattr(request.state, "tenant_id", None)
+    tenant_slug: Optional[str] = getattr(request.state, "tenant_slug", None)
+
+    background_tasks.add_task(
+        process_incoming_message, msg, tenant_id=tenant_id, tenant_slug=tenant_slug
+    )
+
+    return {"status": "ok"}
+
+
+# ---------------------------------------------------------------------------
 # Core: processar mensagem recebida
 # ---------------------------------------------------------------------------
 

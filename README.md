@@ -1,143 +1,120 @@
-# Óptima IA — Agente Lara × Lu Decorações
+# Óptima IA — CRM Multi-Tenant & Agente Lara × Lu Decorações
 
-Agente de qualificação de leads via WhatsApp, construído com **LangGraph + LangChain** e integrado a um **CRM Próprio Local** rodando em **PostgreSQL**. O N8N é usado exclusivamente para triggers simples (follow-up cron, fallback webhook).
+Agente inteligente de qualificação de leads via WhatsApp, construído com **LangGraph + LangChain** e integrado a um **CRM Multi-Tenant** que utiliza **Supabase (PostgreSQL)** com **Row Level Security (RLS)** e persistência em memória/Redis.
 
-## Stack
+---
 
-| Camada | Tecnologia |
-|--------|-----------|
-| **Orquestração do agente** | LangGraph + LangChain |
-| **API / Webhook receiver** | FastAPI |
-| **LLM** | OpenAI GPT-4o / Anthropic Claude |
-| **Canal** | WhatsApp Cloud API (Meta) ou Evolution API |
-| **CRM** | CRM Próprio Local (PostgreSQL + SQLAlchemy Assíncrono) |
-| **Estado de sessão** | Redis (LangGraph memory/checkpointer) |
-| **Triggers simples** | N8N (follow-up cron, notificações) |
-| **Infra** | Docker + VPS (Hetzner/DigitalOcean) |
+## 🚀 Arquitetura & Stack de Tecnologias
 
-## Estrutura do Repositório
+| Camada | Tecnologia | Descrição |
+| :--- | :--- | :--- |
+| **Orquestração do Agente** | LangGraph + LangChain | Inteligência artificial, tomada de decisão e fluxo de conversa estruturado. |
+| **API / Webhook Receiver** | FastAPI | Receptor de webhooks do WhatsApp e endpoints REST dos dashboards. |
+| **Banco de Dados** | Supabase (PostgreSQL) | Banco relacional hospedado na nuvem com extensão **pgvector** habilitada. |
+| **Segurança Multi-Tenant** | PostgreSQL Row Level Security (RLS) | Isolamento lógico completo de dados por tenant_id sem vazamento de escopo. |
+| **Mecanismo de Conexão** | SQLAlchemy (Asyncpg) | Acesso assíncrono ao banco com suporte a SSL e pooler desabilitador de cached statements. |
+| **Sessão & Estado** | Redis | Buffer rápido e fallback local na memória RAM do servidor para dev. |
+
+---
+
+## 📂 Estrutura do Repositório
 
 ```
 optima-ia-agente-crm/
-├── agent/                   # Núcleo do agente (LangGraph)
-│   ├── graph.py             # Definição e compilação do grafo
-│   ├── nodes.py             # Nós do grafo (receive, LLM, sync, handoff)
-│   ├── state.py             # AgentState — estado compartilhado tipado (inclui contato_id/negocio_id)
-│   ├── tools.py             # LangChain Tools (Integração com Local CRM, WhatsApp)
-│   ├── prompts.py           # System prompts versionados
-│   └── extraction.py        # Extração estruturada via Pydantic + LLM
-│
-├── api/                     # FastAPI — Webhook receiver
-│   ├── main.py              # App principal + lifespan (inicializa tabelas DB local)
-│   └── routers/
-│       ├── webhook.py       # POST /webhook/meta e /webhook/evolution
-│       └── health.py        # GET /health/
-│
-├── crm/                     # CRM Próprio Local
-│   ├── database.py          # Configurações do SQLAlchemy assíncrono (engine, get_db_session)
-│   ├── models.py            # Modelos relacionais (Contato, Negocio, Atividade)
-│   └── client.py            # LocalCRMClient (gestão de contatos, negócios e atividades)
-│
-├── whatsapp/                # Clientes WhatsApp
-│   └── client.py            # MetaWhatsAppClient + EvolutionWhatsAppClient
-│
-├── memory/                  # Persistência de estado conversacional
-│   └── store.py             # Redis store + fallback in-memory para dev
-│
-├── n8n_flows/               # Fluxos N8N exportados (triggers simples de follow-up)
-│
-├── tests/                   # Testes unitários e de integração
-│   └── test_graph.py        # Testes usando banco SQLite em memória
-│
-├── infra/
-│   └── docker-compose.yml   # Stack local: FastAPI Agent + Redis + PostgreSQL + N8N
-│
-├── prompts/                 # System prompts versionados em Markdown
-├── schemas/                 # JSON schemas de extração
-├── docs/                    # Documentação técnica e guias de alterações/configurações
-│
-├── Dockerfile
-├── requirements.txt
-├── pyproject.toml
-└── .env.example
+├── agent/                   # Grafo cognitivo da Lara (LangGraph)
+├── api/                     # FastAPI e controladores (routers)
+│   ├── routers/
+│   │   ├── master.py        # Painel Master global (criação e gestão de tenants)
+│   │   └── dashboard.py     # Endpoints do dashboard de CRM do tenant
+│   └── middleware.py        # TenantMiddleware (resolução de inquilino por slug/header)
+├── crm/                     # Relacional do CRM Local
+│   ├── database.py          # SQLAlchemy Async Engine com tratamento para SSL
+│   └── models.py            # Modelos relacionais (enforca TIMESTAMPTZ em todas as datas)
+├── whatsapp/                # Integração com UazAPI / Meta API
+├── migrations/              # Scripts SQL para execução no Supabase Editor
+│   ├── 002_rag_mcp.sql      # Extensões vector
+│   ├── 003_supabase_rls_compat.sql # Políticas de isolamento RLS para plano gratuito
+│   └── 004_seed_tenant_supabase.sql # Script de carga do primeiro tenant
+├── static/                  # HTMLs/CSS/JS Estáticos dos Dashboards
+└── .env                     # Variáveis de ambiente secretas
 ```
-
-## Fluxo do Agente (LangGraph)
-
-```
-START
-  │
-  ▼
-receive_message          ← entrada: mensagem do WhatsApp
-  │
-  ▼
-call_llm (Lara)          ← invoca GPT-4o com system prompt + histórico
-  │
-  ├─[tool_calls?]──► tool_executor    ← create_crm_contact, update_crm_lead, etc.
-  │                       │
-  │◄──────────────────────┘
-  ▼
-sync_crm                 ← atualiza campos + pipeline no Banco Relacional Local
-  │
-  ├─[pronto_transbordo?]──► handoff   ← notifica atendente + mensagem final
-  │
-  └─[aguardando]──► END
-```
-
-## Modelagem do CRM Local (Banco de Dados)
-
-O banco de dados do CRM Próprio possui três tabelas fundamentais:
-*   **`Contato` (`contatos`):** Armazena dados de cadastro (ID, WhatsApp ID único, nome, data de criação).
-*   **`Negocio` (`negocios`):** Registra a oportunidade de vendas vinculada ao contato (tipo de evento, data do evento, orçamento estimado parseado automaticamente, etapa do funil e notas detalhadas da Lara).
-*   **`Atividade` (`atividades`):** Logs de conversas (mensagens inbound e outbound) com timestamp para fins de auditoria.
 
 ---
 
-## Início Rápido
+## 🔒 Segurança Multi-Tenant (RLS no Supabase)
+
+O projeto usa **Row Level Security (RLS)** nativo do Postgres para garantir que um inquilino (tenant) jamais acesse os leads, negócios ou mensagens de outro.
+
+1. O **`TenantMiddleware`** identifica o tenant acessado a partir de:
+   * Header HTTP `X-Tenant-Slug`
+   * Parâmetro de Query `?tenant_slug=ludecor`
+   * Subdomínio (ex: `ludecor.optimaia.com.br`)
+2. Ao realizar qualquer requisição, o SQLAlchemy executa localmente dentro da transação:
+   ```sql
+   SELECT set_config('app.current_tenant_id', '<id_do_tenant>', true);
+   ```
+3. O banco de dados Supabase intercepta todas as consultas através de políticas (`USING` e `WITH CHECK`) definindo que a query só trará dados onde `tenant_id` for igual ao valor desse parâmetro temporário.
+
+---
+
+## 🛠️ Configuração & Inicialização com Supabase
 
 ### 1. Clonar e configurar ambiente
-```bash
-git clone <repo>
-cd optima-ia-agente-crm
-cp .env.example .env
-# Edite o arquivo .env com a sua OPENAI_API_KEY
+Duplique o arquivo `.env.example` para `.env` e configure as credenciais da API do Supabase obtidas em **Settings → API**:
+
+```env
+# Banco de Dados — Conexão Direta (porta 5432)
+DATABASE_URL=postgresql+asyncpg://postgres:[SUA_SENHA]@db.[REF_PROJECT].supabase.co:5432/postgres
+
+# Credenciais SDK Supabase
+SUPABASE_URL=https://[REF_PROJECT].supabase.co
+SUPABASE_ANON_KEY=[SUA_ANON_KEY]
+SUPABASE_SERVICE_ROLE_KEY=[SUA_SERVICE_ROLE_KEY]
+
+# Ambiente e Porta
+ENV=development
+ENVIRONMENT=development
+PORT=8000
 ```
 
-### 2. Desenvolvimento local (Usando SQLite em memória)
+### 2. Inicialização Automática das Tabelas
+O próprio FastAPI possui um gatilho de lifespan que cria as tabelas caso não existam no banco conectado.
+Para rodar a primeira vez e fazer o upload do Schema:
+
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+# Ativar venv e instalar dependências
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
 
-# Roda a API FastAPI localmente (Cria automaticamente as tabelas SQLite)
+# Iniciar o servidor (irá criar as tabelas no Supabase automaticamente)
 python -m api.main
 ```
 
-### 3. Rodando em Produção (Docker Compose)
-Suba a stack inteira contendo o PostgreSQL local configurado e persistente:
-```bash
-docker compose -f infra/docker-compose.yml up -d
-```
+### 3. Rodar as Migrações de Segurança no SQL Editor
+Com as tabelas criadas no Supabase, acesse o painel web do seu **Supabase → SQL Editor → New Query** e execute na seguinte ordem:
 
-### 4. Executando testes locais
-```bash
-source .venv/bin/activate
-pytest tests/ -v
-```
+1. **[002_rag_mcp.sql](file:///e:/optima-ia-agente-crm/migrations/002_rag_mcp.sql)**: Habilita extensões obrigatórias (`vector`).
+2. **[003_supabase_rls_compat.sql](file:///e:/optima-ia-agente-crm/migrations/003_supabase_rls_compat.sql)**: Ativa o RLS em todas as tabelas e cria as regras de filtro automáticas baseadas em `app.current_tenant_id` (compatível com plano Free).
+3. **[004_seed_tenant_supabase.sql](file:///e:/optima-ia-agente-crm/migrations/004_seed_tenant_supabase.sql)**: Insere o primeiro tenant (`ludecor`) e cria a agente `Lara` vinculada a ele.
 
 ---
 
-## Configuração do Webhook
+## 📋 Acessando os Dashboards
 
-### Meta WhatsApp Cloud API
-1.  No Meta Business Suite → WhatsApp → Webhooks
-2.  URL: `https://seu-dominio.com/webhook/meta`
-3.  Token de verificação: valor de `META_WEBHOOK_VERIFY_TOKEN` configurado no `.env`
-4.  Campos assinados: `messages`
+### Painel Master (Administração Global)
+Usado para criar novos tenants (empresas) e definir limites ou configurações individuais de LLM.
+* **URL**: `http://localhost:8000/master`
+* **Senha de Acesso (Master Key)**: Definido pela variável `MASTER_KEY` no seu `.env` (Padrão local se vazia: `optima_master_secret_key`).
+
+### Dashboard do Cliente (CRM do Tenant)
+Exibe funil de vendas, contatos qualificados e histórico de conversas do WhatsApp em tempo real.
+* **URL**: `http://localhost:8000/?tenant_slug=ludecor` (Insira o slug do tenant que você criou).
 
 ---
 
-## Cliente
+## 💡 Informações de Desenvolvimento (Timezones & SSL)
 
-Desenvolvido para **Lu Decorações** pela **Óptima IA**.  
-Documentação completa de alterações e arquitetura em `docs/alteracoes_e_configuracao.md`.
+* **Compatibilidade com Transaction Pooler (Supabase porta 6543)**: Projetos Supabase usam pooler que quebra se prepared statements forem cacheados pelo driver Python. O engine do projeto é configurado automaticamente com `statement_cache_size=0` ao detectar o host do Supabase, evitando este problema.
+* **Forçamento de SSL**: O driver `asyncpg` é instruído a exigir conexão segura (`ssl="require"`) obrigatoriamente para as conexões do Supabase.
+* **Mapeamento de Timezone (Fix do PostgreSQL)**: O banco PostgreSQL e o driver `asyncpg` exigem correspondência de fuso horário. Por padrão, todas as datas em [`crm/models.py`](file:///e:/optima-ia-agente-crm/crm/models.py) foram migradas para `DateTime(timezone=True)` para que os campos aceitem as datas geradas por `datetime.now(timezone.utc)` sem conflito de tipos.

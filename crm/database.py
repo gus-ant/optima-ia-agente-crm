@@ -32,12 +32,35 @@ DATABASE_URL = os.getenv(
     "sqlite+aiosqlite:///./optimacrm.db"
 )
 
+
+def _is_postgres() -> bool:
+    """Retorna True se o DATABASE_URL aponta para PostgreSQL (inclui Supabase)."""
+    return DATABASE_URL.startswith("postgresql") or DATABASE_URL.startswith("postgres")
+
+
+def _is_supabase() -> bool:
+    """Detecta se o banco é Supabase pela presença do domínio característico."""
+    return "supabase.co" in DATABASE_URL or "supabase.com" in DATABASE_URL
+
+
+# Argumentos extras de conexão para asyncpg no Supabase:
+# - ssl="require": SSL obrigatório em todos os projetos Supabase
+# - statement_cache_size=0: desabilita prepared statements, necessário para
+#   funcionar com o Transaction Pooler do Supabase (porta 6543).
+#   Na conexão direta (porta 5432) é opcional, mas não causa problemas.
+_connect_args: dict = {}
+if _is_postgres():
+    _connect_args["statement_cache_size"] = 0
+if _is_supabase():
+    _connect_args["ssl"] = "require"
+
 # Configuração da Engine assíncrona
 # pool_pre_ping previne erros de conexões inativas
 engine = create_async_engine(
     DATABASE_URL,
     pool_pre_ping=True,
     echo=False,
+    connect_args=_connect_args,
 )
 
 # Factory de sessões assíncronas
