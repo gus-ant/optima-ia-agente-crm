@@ -1,1091 +1,807 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html class="dark" lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Panel — Óptima IA</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --bg-void: #060910;
-            --bg-surface: #0d1117;
-            --bg-card: #111827;
-            --bg-card-hover: #161f2e;
-            --bg-input: #0d1117;
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --text-muted: #475569;
-            --accent: #f43f5e;
-            --accent-dim: rgba(244, 63, 94, 0.12);
-            --accent-glow: rgba(244, 63, 94, 0.25);
-            --success: #10b981;
-            --success-dim: rgba(16, 185, 129, 0.12);
-            --danger: #f43f5e;
-            --danger-dim: rgba(244, 63, 94, 0.10);
-            --warning: #f59e0b;
-            --border: rgba(255, 255, 255, 0.06);
-            --border-hover: rgba(255, 255, 255, 0.12);
-            --border-accent: rgba(244, 63, 94, 0.3);
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
-            --shadow-md: 0 4px 20px rgba(0,0,0,0.5);
-            --shadow-accent: 0 0 24px rgba(244, 63, 94, 0.08);
-            --radius-sm: 6px;
-            --radius-md: 10px;
-            --radius-lg: 16px;
-            --transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.01); border-radius: 8px; }
-        ::-webkit-scrollbar-thumb { background: rgba(244,63,94,0.2); border-radius: 8px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(244,63,94,0.4); }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-void);
-            color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        h1, h2, h3, h4, h5, h6 {
-            font-family: 'Outfit', sans-serif;
-        }
-
-        /* ─── Grid texture overlay ─── */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
-            background-size: 48px 48px;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* ─── Ambient glow top ─── */
-        body::after {
-            content: '';
-            position: fixed;
-            top: -200px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 900px;
-            height: 500px;
-            background: radial-gradient(ellipse, rgba(244,63,94,0.06) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* ─── LOGIN ─── */
-        #login-overlay {
-            position: fixed;
-            inset: 0;
-            background: var(--bg-void);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
-
-        .login-wrap {
-            position: relative;
-            z-index: 1;
-            text-align: center;
-            width: 100%;
-            max-width: 420px;
-            padding: 1rem;
-        }
-
-        .login-logo {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.6rem;
-            margin-bottom: 2.5rem;
-        }
-
-        .login-logo-icon {
-            width: 40px;
-            height: 40px;
-            background: var(--accent-dim);
-            border: 1px solid var(--border-accent);
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--accent);
-            font-size: 1.1rem;
-        }
-
-        .login-logo span {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.25rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-        }
-
-        .login-logo span em {
-            color: var(--accent);
-            font-style: normal;
-        }
-
-        .login-box {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 2.5rem;
-            box-shadow: var(--shadow-md), var(--shadow-accent);
-        }
-
-        .login-box h2 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.4rem;
-            letter-spacing: -0.02em;
-        }
-
-        .login-box p {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            margin-bottom: 2rem;
-        }
-
-        .input-field {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border);
-            background: var(--bg-input);
-            color: var(--text-primary);
-            font-size: 0.9375rem;
-            font-family: 'Inter', sans-serif;
-            transition: var(--transition);
-            margin-bottom: 1rem;
-        }
-
-        .input-field:focus {
-            outline: none;
-            border-color: var(--border-accent);
-            box-shadow: 0 0 0 3px var(--accent-glow);
-        }
-
-        .btn-primary {
-            width: 100%;
-            padding: 0.8rem 1.5rem;
-            border-radius: var(--radius-md);
-            border: none;
-            background: var(--accent);
-            color: white;
-            font-weight: 600;
-            font-size: 0.9375rem;
-            font-family: 'Outfit', sans-serif;
-            cursor: pointer;
-            letter-spacing: 0.01em;
-            transition: var(--transition);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-primary::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .btn-primary:hover {
-            background: #e11d48;
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(244,63,94,0.4);
-        }
-
-        .btn-primary:hover::after { opacity: 1; }
-        .btn-primary:active { transform: translateY(0); }
-
-        /* ─── APP ─── */
-        #app { display: none; flex-direction: column; min-height: 100vh; position: relative; z-index: 1; }
-
-        /* ─── HEADER ─── */
-        .header {
-            background: rgba(13,17,23,0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border);
-            padding: 0 2rem;
-            height: 60px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .header-brand {
-            display: flex;
-            align-items: center;
-            gap: 0.625rem;
-        }
-
-        .brand-icon {
-            width: 30px;
-            height: 30px;
-            background: var(--accent-dim);
-            border: 1px solid var(--border-accent);
-            border-radius: 7px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--accent);
-            font-size: 0.8rem;
-        }
-
-        .brand-name {
-            font-family: 'Outfit', sans-serif;
-            font-weight: 700;
-            font-size: 1rem;
-            letter-spacing: -0.02em;
-        }
-
-        .brand-name em {
-            color: var(--accent);
-            font-style: normal;
-        }
-
-        .brand-badge {
-            font-size: 0.65rem;
-            font-weight: 600;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--accent);
-            background: var(--accent-dim);
-            border: 1px solid var(--border-accent);
-            padding: 2px 7px;
-            border-radius: 99px;
-            margin-left: 0.25rem;
-        }
-
-        .btn-ghost {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            padding: 0.45rem 1rem;
-            border-radius: var(--radius-sm);
-            font-size: 0.8125rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        .btn-ghost:hover {
-            border-color: var(--border-hover);
-            color: var(--text-primary);
-            background: rgba(255,255,255,0.04);
-        }
-
-        /* ─── CONTAINER ─── */
-        .container {
-            padding: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
-            flex-grow: 1;
-        }
-
-        /* ─── PAGE TITLE ─── */
-        .page-title {
-            margin-bottom: 2rem;
-        }
-
-        .page-title h2 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            letter-spacing: -0.025em;
-            margin-bottom: 0.25rem;
-        }
-
-        .page-title p {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-
-        /* ─── STATS ─── */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 1.5rem;
-            position: relative;
-            overflow: hidden;
-            transition: var(--transition);
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, var(--accent), transparent);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .stat-card:hover { border-color: var(--border-hover); }
-        .stat-card:hover::before { opacity: 1; }
-
-        .stat-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
-        }
-
-        .stat-icon.total { background: rgba(59,130,246,0.12); color: #60a5fa; }
-        .stat-icon.active { background: var(--success-dim); color: var(--success); }
-
-        .stat-label {
-            color: var(--text-secondary);
-            font-size: 0.75rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.07em;
-            margin-bottom: 0.4rem;
-        }
-
-        .stat-value {
-            font-family: 'Outfit', sans-serif;
-            font-size: 2rem;
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            line-height: 1;
-        }
-
-        /* ─── SECTION HEADER ─── */
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.25rem;
-        }
-
-        .section-title {
-            font-size: 1rem;
-            font-weight: 600;
-            letter-spacing: -0.01em;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-primary);
-        }
-
-        .section-title i { color: var(--text-muted); font-size: 0.875rem; }
-
-        .btn-create {
-            background: var(--accent-dim);
-            border: 1px solid var(--border-accent);
-            color: var(--accent);
-            padding: 0.5rem 1rem;
-            border-radius: var(--radius-md);
-            font-size: 0.8125rem;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: 'Inter', sans-serif;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            transition: var(--transition);
-            white-space: nowrap;
-        }
-
-        .btn-create:hover {
-            background: rgba(244,63,94,0.18);
-            box-shadow: 0 0 16px rgba(244,63,94,0.15);
-            transform: translateY(-1px);
-        }
-
-        /* ─── TABLE ─── */
-        .table-wrap {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-            box-shadow: var(--shadow-sm);
-        }
-
-        table { width: 100%; border-collapse: collapse; }
-
-        thead {
-            background: rgba(0,0,0,0.2);
-            border-bottom: 1px solid var(--border);
-        }
-
-        th {
-            padding: 0.875rem 1.25rem;
-            font-size: 0.6875rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-muted);
-            white-space: nowrap;
-        }
-
-        td { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
-
-        tr:last-child td { border-bottom: none; }
-
-        tbody tr { transition: background 0.15s; }
-        tbody tr:hover td { background: rgba(255,255,255,0.02); }
-
-        .td-id { color: var(--text-muted); font-variant-numeric: tabular-nums; }
-        .td-slug { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.8rem; color: #7dd3fc; background: rgba(125,211,252,0.08); padding: 0.2em 0.5em; border-radius: 4px; border: 1px solid rgba(125,211,252,0.15); }
-        .td-name { font-weight: 500; }
-
-        /* ─── BADGES ─── */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.3rem;
-            padding: 0.25rem 0.6rem;
-            border-radius: 99px;
-            font-size: 0.6875rem;
-            font-weight: 600;
-            letter-spacing: 0.04em;
-        }
-
-        .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; }
-
-        .badge-active { background: var(--success-dim); color: var(--success); border: 1px solid rgba(16,185,129,0.25); }
-        .badge-active::before { background: var(--success); box-shadow: 0 0 6px var(--success); }
-
-        .badge-inactive { background: rgba(239,68,68,0.08); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
-        .badge-inactive::before { background: #f87171; }
-
-        .badge-plan {
-            font-size: 0.65rem;
-            padding: 0.2rem 0.55rem;
-            border-radius: 4px;
-            font-weight: 600;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-        }
-
-        .plan-basic { background: rgba(148,163,184,0.1); color: #94a3b8; border: 1px solid rgba(148,163,184,0.2); }
-        .plan-pro { background: rgba(168,85,247,0.1); color: #c084fc; border: 1px solid rgba(168,85,247,0.25); }
-        .plan-enterprise { background: rgba(245,158,11,0.1); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
-
-        /* ─── TABLE ACTIONS ─── */
-        .row-actions { display: flex; gap: 0.375rem; justify-content: flex-end; }
-
-        .btn-row {
-            width: 32px;
-            height: 32px;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border);
-            background: transparent;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 0.8125rem;
-            transition: var(--transition);
-        }
-
-        .btn-row:hover {
-            background: rgba(255,255,255,0.06);
-            border-color: var(--border-hover);
-            color: var(--text-primary);
-        }
-
-        .btn-row.danger:hover {
-            background: var(--danger-dim);
-            border-color: rgba(244,63,94,0.3);
-            color: var(--accent);
-        }
-
-        .btn-row.success-btn:hover {
-            background: var(--success-dim);
-            border-color: rgba(16,185,129,0.3);
-            color: var(--success);
-        }
-
-        /* ─── MODALS ─── */
-        .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 1rem;
-        }
-
-        .modal.active { display: flex; }
-
-        .modal-content {
-            background: var(--bg-card);
-            border: 1px solid var(--border-hover);
-            border-radius: var(--radius-lg);
-            width: 100%;
-            max-width: 480px;
-            padding: 2rem;
-            box-shadow: var(--shadow-md);
-            animation: slideUp 0.25s cubic-bezier(0.4,0,0.2,1);
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(16px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1.75rem;
-        }
-
-        .modal-header h3 {
-            font-size: 1.125rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-        }
-
-        .modal-header p {
-            color: var(--text-secondary);
-            font-size: 0.8125rem;
-            margin-top: 0.25rem;
-        }
-
-        .btn-close-modal {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            width: 30px;
-            height: 30px;
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 0.875rem;
-            flex-shrink: 0;
-            transition: var(--transition);
-        }
-
-        .btn-close-modal:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
-
-        .form-group { margin-bottom: 1.25rem; }
-
-        .form-group label {
-            display: block;
-            font-size: 0.8125rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            margin-bottom: 0.5rem;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 0.7rem 1rem;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border);
-            background: var(--bg-input);
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            font-family: 'Inter', sans-serif;
-            transition: var(--transition);
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--border-accent);
-            box-shadow: 0 0 0 3px var(--accent-glow);
-        }
-
-        .form-group select { cursor: pointer; }
-
-        .form-group textarea {
-            resize: vertical;
-            min-height: 90px;
-            line-height: 1.6;
-        }
-
-        select option { background-color: #0b0f19; color: #e2e8f0; }
-
-        .modal-footer { margin-top: 1.75rem; }
-
-        .btn-submit {
-            width: 100%;
-            padding: 0.8rem;
-            border-radius: var(--radius-md);
-            border: none;
-            background: var(--accent);
-            color: white;
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.9375rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .btn-submit:hover {
-            background: #e11d48;
-            box-shadow: 0 4px 16px rgba(244,63,94,0.35);
-            transform: translateY(-1px);
-        }
-
-        .btn-submit:active { transform: translateY(0); }
-
-        /* ─── DIVIDER ─── */
-        .form-divider {
-            height: 1px;
-            background: var(--border);
-            margin: 1.25rem 0;
-        }
-
-        /* ─── EMPTY STATE ─── */
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: var(--text-muted);
-        }
-
-        .empty-state i { font-size: 2rem; margin-bottom: 1rem; display: block; }
-        .empty-state p { font-size: 0.875rem; }
-
-        /* ─── TOAST ─── */
-        .toast {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: var(--bg-card);
-            border: 1px solid var(--border-hover);
-            padding: 1rem 1.25rem;
-            border-radius: var(--radius-md);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            transform: translateY(120%) scale(0.95);
-            opacity: 0;
-            transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
-            z-index: 2000;
-            font-size: 0.875rem;
-            min-width: 260px;
-            max-width: 360px;
-        }
-
-        .toast.show { transform: translateY(0) scale(1); opacity: 1; }
-        .toast.error { border-left: 3px solid var(--danger); }
-        .toast.success { border-left: 3px solid var(--success); }
-
-        .toast .toast-icon { font-size: 1rem; flex-shrink: 0; }
-        .toast.error .toast-icon { color: var(--danger); }
-        .toast.success .toast-icon { color: var(--success); }
-
-        /* ─── TAB ANIMATION ─── */
-        .tab-section {
-            animation: fadeIn 0.3s ease-out forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* ─── RESPONSIVE ─── */
-        @media (max-width: 640px) {
-            .container { padding: 1.25rem; }
-            .header { padding: 0 1.25rem; }
-            th, td { padding: 0.75rem 1rem; }
-            .stats-grid { grid-template-columns: 1fr 1fr; }
-        }
-    </style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Óptima IA — Master Panel</title>
+<meta name="description" content="Painel Master da plataforma Óptima IA. Gerencie tenants, agentes e configurações globais."/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "primary": "#ffb599",
+        "primary-container": "#f66018",
+        "on-primary": "#5a1c00",
+        "on-primary-container": "#4f1700",
+        "secondary": "#d2bbff",
+        "secondary-container": "#6001d1",
+        "tertiary": "#ffb1c7",
+        "tertiary-container": "#ff4993",
+        "surface": "#131314",
+        "surface-dim": "#131314",
+        "surface-bright": "#3a393a",
+        "surface-container-lowest": "#0e0e0f",
+        "surface-container-low": "#1c1b1d",
+        "surface-container": "#201f21",
+        "surface-container-high": "#2a2a2b",
+        "surface-container-highest": "#353436",
+        "on-surface": "#e5e2e3",
+        "on-surface-variant": "#e2bfb2",
+        "outline": "#a98a7e",
+        "outline-variant": "#5a4138",
+        "glass-surface": "rgba(255, 255, 255, 0.03)",
+        "glass-border": "rgba(255, 255, 255, 0.08)",
+        "success": "#10b981",
+        "warning": "#f59e0b",
+        "error": "#ef4444",
+      },
+      fontFamily: {
+        "display": ["Outfit", "sans-serif"],
+        "body": ["Inter", "sans-serif"],
+      },
+    }
+  }
+}
+</script>
+<style>
+  * { box-sizing: border-box; }
+  body { background-color: #070708; color: #e5e2e3; overflow-x: hidden; font-family: 'Inter', sans-serif; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,181,153,0.2); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,181,153,0.4); }
+
+  .glass-card {
+    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top-color: rgba(255,255,255,0.12);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  }
+  .glass-panel {
+    backdrop-filter: blur(24px);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+  }
+  .glass-modal {
+    backdrop-filter: blur(32px);
+    background: rgba(20, 18, 20, 0.92);
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.8);
+  }
+  .gradient-text {
+    background: linear-gradient(135deg, #f66018 0%, #ff4993 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .gradient-bg { background: linear-gradient(135deg, #f66018 0%, #ff4993 100%); }
+  .primary-glow { box-shadow: 0 0 24px rgba(246,96,24,0.35); }
+  .sidebar-item-active {
+    background: rgba(255, 181, 153, 0.1);
+    border-right: 2px solid #ffb599;
+    color: #ffb599;
+  }
+  .sidebar-item {
+    color: #e2bfb2;
+    opacity: 0.7;
+    border-right: 2px solid transparent;
+  }
+  .sidebar-item:hover {
+    background: rgba(255,255,255,0.04);
+    color: #e5e2e3;
+    opacity: 1;
+  }
+
+  /* Login overlay */
+  #login-overlay {
+    position: fixed; inset: 0; background: #070708;
+    display: flex; align-items: center; justify-content: center; z-index: 9999;
+  }
+
+  /* App shell */
+  #app { display: none; min-height: 100vh; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+    z-index: 500; align-items: center; justify-content: center; padding: 1rem;
+  }
+  .modal-overlay.active { display: flex; }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .modal-content { animation: slideUp 0.25s cubic-bezier(0.4,0,0.2,1); }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 2rem; right: 2rem;
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 1rem 1.25rem; border-radius: 12px;
+    font-size: 0.875rem; min-width: 260px; max-width: 380px;
+    transform: translateY(120%) scale(0.95); opacity: 0;
+    transition: all 0.35s cubic-bezier(0.4,0,0.2,1); z-index: 2000;
+    backdrop-filter: blur(16px);
+    background: rgba(30,28,30,0.95);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+  }
+  #toast.show { transform: translateY(0) scale(1); opacity: 1; }
+  #toast.success { border-left: 3px solid #10b981; }
+  #toast.error   { border-left: 3px solid #ef4444; }
+
+  /* Table hover */
+  tbody tr { transition: background 0.15s; }
+  tbody tr:hover td { background: rgba(255,255,255,0.025); }
+
+  /* Active nav link animation */
+  nav a { transition: all 0.2s ease; }
+</style>
 </head>
 <body>
 
-<!-- ─── LOGIN ─── -->
+<!-- ── LOGIN OVERLAY ── -->
 <div id="login-overlay">
-    <div class="login-wrap">
-        <div class="login-logo">
-            <div class="login-logo-icon"><i class="fas fa-cube"></i></div>
-            <span>Óptima <em>IA</em></span>
-        </div>
-        <div class="login-box">
-            <h2>Painel Master</h2>
-            <p>Acesso restrito a administradores da plataforma</p>
-            <input
-                type="password"
-                id="master-key-input"
-                class="input-field"
-                placeholder="Insira a Master Key"
-                onkeypress="if(event.key === 'Enter') login()"
-            >
-            <button class="btn-primary" onclick="login()">
-                Entrar &nbsp;<i class="fas fa-arrow-right"></i>
-            </button>
-        </div>
+  <div style="width:100%;max-width:420px;padding:1rem;position:relative;z-index:1;">
+
+    <!-- Brand -->
+    <div style="text-align:center;margin-bottom:2.5rem;">
+      <h1 style="font-family:'Outfit',sans-serif;font-size:3rem;font-weight:800;letter-spacing:-0.03em;line-height:1;" class="gradient-text">Óptima IA</h1>
+      <p style="font-size:11px;letter-spacing:0.1em;font-weight:600;color:#e2bfb2;opacity:0.7;text-transform:uppercase;margin-top:0.25rem;">Master Control Panel</p>
     </div>
+
+    <!-- Login Card -->
+    <div class="glass-panel" style="border-radius:20px;padding:2.5rem;">
+      <h2 style="font-family:'Outfit',sans-serif;font-size:1.375rem;font-weight:700;margin-bottom:0.375rem;">Acesso Restrito</h2>
+      <p style="font-size:0.8125rem;color:#e2bfb2;opacity:0.8;margin-bottom:2rem;">Insira sua Master Key para continuar</p>
+
+      <div style="position:relative;margin-bottom:1.25rem;">
+        <span class="material-symbols-outlined" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#a98a7e;font-size:20px;">key</span>
+        <input
+          type="password"
+          id="master-key-input"
+          placeholder="master_key_aqui"
+          onkeypress="if(event.key==='Enter') login()"
+          style="
+            width:100%;padding:0.8rem 1rem 0.8rem 3rem;
+            border-radius:10px;border:1px solid rgba(255,255,255,0.1);
+            background:rgba(255,255,255,0.04);color:#e5e2e3;
+            font-family:'Inter',sans-serif;font-size:0.9375rem;
+            outline:none;transition:border-color 0.2s,box-shadow 0.2s;
+          "
+          onfocus="this.style.borderColor='rgba(246,96,24,0.6)';this.style.boxShadow='0 0 0 3px rgba(246,96,24,0.15)'"
+          onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.boxShadow='none'"
+        />
+      </div>
+
+      <button onclick="login()" class="gradient-bg primary-glow" style="
+        width:100%;padding:0.85rem;border-radius:10px;border:none;
+        color:#4f1700;font-family:'Outfit',sans-serif;font-weight:700;
+        font-size:0.9375rem;letter-spacing:0.02em;cursor:pointer;
+        transition:transform 0.15s,opacity 0.15s;
+      " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">
+        Entrar no Painel
+      </button>
+    </div>
+
+    <!-- BG glow -->
+    <div style="position:absolute;top:-150px;left:50%;transform:translateX(-50%);width:600px;height:400px;background:radial-gradient(ellipse,rgba(246,96,24,0.08) 0%,transparent 65%);pointer-events:none;z-index:0;"></div>
+  </div>
 </div>
 
-<!-- ─── APP ─── -->
-<div id="app" style="display:none; flex-direction:column; min-height:100vh; position:relative; z-index:1;">
 
-    <header class="header">
-        <div class="header-brand">
-            <div class="brand-icon"><i class="fas fa-cube"></i></div>
-            <span class="brand-name">Óptima <em>IA</em></span>
-            <span class="brand-badge">master</span>
+<!-- ── APP SHELL ── -->
+<div id="app" style="display:none;">
+
+  <!-- ── SIDEBAR ── -->
+  <aside style="width:256px;height:100vh;position:fixed;left:0;top:0;overflow-y:auto;
+    backdrop-filter:blur(20px);background:rgba(255,255,255,0.03);
+    border-right:1px solid rgba(255,255,255,0.08);
+    box-shadow:4px 0 40px rgba(0,0,0,0.5);z-index:50;display:flex;flex-direction:column;padding:1.5rem 0;">
+
+    <!-- Brand -->
+    <div style="padding:0 1.5rem;margin-bottom:2.5rem;">
+      <h1 style="font-family:'Outfit',sans-serif;font-size:2.5rem;font-weight:800;letter-spacing:-0.03em;line-height:1.1;" class="gradient-text">Óptima<br>IA</h1>
+      <p style="font-size:11px;letter-spacing:0.1em;font-weight:600;color:#e2bfb2;opacity:0.7;text-transform:uppercase;margin-top:0.4rem;">CRM Intelligence</p>
+    </div>
+
+    <!-- Nav -->
+    <nav style="flex:1;">
+      <a href="#" class="sidebar-item-active" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;">
+        <span class="material-symbols-outlined" style="font-size:20px;">dashboard</span> Visão Geral
+      </a>
+      <a href="#" class="sidebar-item" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;border-right:2px solid transparent;">
+        <span class="material-symbols-outlined" style="font-size:20px;">corporate_fare</span> Tenants
+      </a>
+      <a href="#" class="sidebar-item" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;border-right:2px solid transparent;">
+        <span class="material-symbols-outlined" style="font-size:20px;">smart_toy</span> Agentes IA
+      </a>
+      <a href="#" class="sidebar-item" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;border-right:2px solid transparent;">
+        <span class="material-symbols-outlined" style="font-size:20px;">analytics</span> Métricas
+      </a>
+      <a href="#" class="sidebar-item" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;border-right:2px solid transparent;">
+        <span class="material-symbols-outlined" style="font-size:20px;">hub</span> Integrações
+      </a>
+      <a href="#" class="sidebar-item" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;border-right:2px solid transparent;">
+        <span class="material-symbols-outlined" style="font-size:20px;">settings</span> Configurações
+      </a>
+    </nav>
+
+    <!-- New Tenant CTA + Logout -->
+    <div style="padding:0 1.25rem;margin-top:auto;display:flex;flex-direction:column;gap:0.75rem;">
+      <button onclick="openCreateModal()" class="gradient-bg primary-glow" style="
+        width:100%;padding:0.8rem;border-radius:10px;border:none;
+        color:#4f1700;font-family:'Outfit',sans-serif;font-weight:700;
+        font-size:13px;letter-spacing:0.03em;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;gap:8px;
+        transition:transform 0.15s,opacity 0.15s;
+      " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+        <span class="material-symbols-outlined" style="font-size:18px;">add</span>
+        Novo Tenant
+      </button>
+      <button onclick="logout()" style="
+        width:100%;padding:0.65rem;border-radius:10px;
+        border:1px solid rgba(255,255,255,0.08);
+        background:transparent;color:#e2bfb2;opacity:0.7;
+        font-family:'Inter',sans-serif;font-size:12px;font-weight:600;
+        letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;gap:8px;
+        transition:all 0.2s;
+      " onmouseover="this.style.opacity='1';this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.opacity='0.7';this.style.background='transparent'">
+        <span class="material-symbols-outlined" style="font-size:16px;">logout</span>
+        Sair
+      </button>
+    </div>
+  </aside>
+
+
+  <!-- ── MAIN CONTENT ── -->
+  <div style="margin-left:256px;min-height:100vh;display:flex;flex-direction:column;">
+
+    <!-- ── TOPBAR ── -->
+    <header style="
+      height:64px;position:sticky;top:0;z-index:40;
+      backdrop-filter:blur(16px);background:rgba(7,7,8,0.7);
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 2rem;
+    ">
+      <div style="display:flex;align-items:center;gap:1rem;">
+        <span style="font-family:'Outfit',sans-serif;font-size:1.125rem;font-weight:600;color:#ffb599;">Painel Master</span>
+        <div style="height:16px;width:1px;background:rgba(255,255,255,0.08);"></div>
+        <div style="display:flex;gap:1rem;">
+          <a href="#" style="font-size:12px;font-weight:600;letter-spacing:0.05em;color:#e2bfb2;text-decoration:none;opacity:0.8;transition:color 0.2s;" onmouseover="this.style.color='#ffb599'" onmouseout="this.style.color='#e2bfb2'">Documentação</a>
+          <a href="#" style="font-size:12px;font-weight:600;letter-spacing:0.05em;color:#e2bfb2;text-decoration:none;opacity:0.8;transition:color 0.2s;" onmouseover="this.style.color='#ffb599'" onmouseout="this.style.color='#e2bfb2'">Suporte</a>
         </div>
-        <button class="btn-ghost" onclick="logout()">
-            <i class="fas fa-sign-out-alt"></i> Sair
+      </div>
+      <div style="display:flex;align-items:center;gap:1.25rem;">
+        <button style="background:none;border:none;cursor:pointer;color:#e2bfb2;opacity:0.7;transition:color 0.2s,opacity 0.2s;" onmouseover="this.style.color='#ffb599';this.style.opacity='1'" onmouseout="this.style.color='#e2bfb2';this.style.opacity='0.7'">
+          <span class="material-symbols-outlined" style="font-size:22px;">notifications</span>
         </button>
+        <button style="background:none;border:none;cursor:pointer;color:#e2bfb2;opacity:0.7;transition:color 0.2s,opacity 0.2s;" onmouseover="this.style.color='#ffb599';this.style.opacity='1'" onmouseout="this.style.color='#e2bfb2';this.style.opacity='0.7'">
+          <span class="material-symbols-outlined" style="font-size:22px;">help_outline</span>
+        </button>
+        <div style="width:1px;height:24px;background:rgba(255,255,255,0.08);"></div>
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <div style="text-align:right;">
+            <p style="font-size:12px;font-weight:700;letter-spacing:0.04em;line-height:1.2;">Admin Global</p>
+            <p style="font-size:10px;color:#ffb599;letter-spacing:0.06em;">master@optima.ia</p>
+          </div>
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f66018,#ff4993);display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:#4f1700;border:2px solid rgba(255,181,153,0.3);">M</div>
+        </div>
+      </div>
     </header>
 
-    <main class="container tab-section">
 
-        <div class="page-title">
-            <h2>Visão Geral</h2>
-            <p>Gerencie todos os tenants e configurações da plataforma</p>
+    <!-- ── PAGE CONTENT ── -->
+    <main style="flex:1;padding:2rem;overflow-y:auto;">
+
+      <!-- Stats Bento Grid -->
+      <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.25rem;margin-bottom:2rem;">
+
+        <!-- Total Tenants -->
+        <div class="glass-card" style="border-radius:16px;padding:1.5rem;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(255,181,153,0.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
+            <div style="background:rgba(255,181,153,0.12);padding:8px;border-radius:10px;color:#ffb599;">
+              <span class="material-symbols-outlined" style="font-size:22px;">corporate_fare</span>
+            </div>
+          </div>
+          <p style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#e2bfb2;margin-bottom:0.375rem;">Total de Tenants</p>
+          <h2 id="stat-total" style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-0.03em;line-height:1;">—</h2>
+          <div style="margin-top:1rem;height:3px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;">
+            <div style="height:100%;width:75%;background:linear-gradient(90deg,#f66018,#ffb599);border-radius:99px;"></div>
+          </div>
         </div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon total"><i class="fas fa-layer-group"></i></div>
-                <div class="stat-label">Total de Tenants</div>
-                <div class="stat-value" id="stat-total">—</div>
+        <!-- Active Tenants -->
+        <div class="glass-card" style="border-radius:16px;padding:1.5rem;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(16,185,129,0.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
+            <div style="background:rgba(16,185,129,0.12);padding:8px;border-radius:10px;color:#10b981;">
+              <span class="material-symbols-outlined" style="font-size:22px;">check_circle</span>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon active"><i class="fas fa-circle-check"></i></div>
-                <div class="stat-label">Tenants Ativos</div>
-                <div class="stat-value" id="stat-active" style="color: var(--success);">—</div>
-            </div>
+            <span style="font-size:11px;font-weight:700;color:#10b981;letter-spacing:0.04em;">Ativos</span>
+          </div>
+          <p style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#e2bfb2;margin-bottom:0.375rem;">Tenants Ativos</p>
+          <h2 id="stat-active" style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-0.03em;line-height:1;color:#10b981;">—</h2>
         </div>
 
-        <div class="section-header">
-            <span class="section-title">
-                <i class="fas fa-users"></i>
-                Tenants
-            </span>
-            <button class="btn-create" onclick="openCreateModal()">
-                <i class="fas fa-plus"></i> Novo Tenant
+      </section>
+
+
+      <!-- Tenant Table -->
+      <section class="glass-card" style="border-radius:16px;overflow:hidden;margin-bottom:2rem;">
+
+        <!-- Table Header -->
+        <div style="padding:1.5rem;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+          <div>
+            <h3 style="font-family:'Outfit',sans-serif;font-size:1.125rem;font-weight:700;margin-bottom:0.2rem;">Gerenciamento de Tenants</h3>
+            <p style="font-size:13px;color:#e2bfb2;opacity:0.8;">Listagem completa de instâncias corporativas do CRM.</p>
+          </div>
+          <div style="display:flex;gap:0.75rem;align-items:center;">
+            <div style="position:relative;">
+              <span class="material-symbols-outlined" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#a98a7e;font-size:18px;">search</span>
+              <input
+                type="text"
+                id="tenant-search"
+                placeholder="Buscar empresa..."
+                oninput="filterTenants()"
+                style="
+                  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
+                  border-radius:10px;padding:0.6rem 1rem 0.6rem 2.75rem;
+                  color:#e5e2e3;font-family:'Inter',sans-serif;font-size:13px;
+                  outline:none;width:220px;transition:border-color 0.2s,box-shadow 0.2s;
+                "
+                onfocus="this.style.borderColor='rgba(246,96,24,0.5)';this.style.boxShadow='0 0 0 2px rgba(246,96,24,0.12)'"
+                onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.boxShadow='none'"
+              />
+            </div>
+            <button onclick="openCreateModal()" class="gradient-bg" style="
+              display:flex;align-items:center;gap:6px;
+              padding:0.6rem 1rem;border-radius:10px;border:none;
+              color:#4f1700;font-family:'Inter',sans-serif;font-weight:700;
+              font-size:12px;letter-spacing:0.04em;cursor:pointer;
+              transition:opacity 0.2s,transform 0.15s;
+            " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+              <span class="material-symbols-outlined" style="font-size:16px;">add</span>
+              Novo Tenant
             </button>
+          </div>
         </div>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Slug</th>
-                        <th>Nome</th>
-                        <th>Plano</th>
-                        <th>Status</th>
-                        <th>Criado em</th>
-                        <th style="text-align:right;">Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="tenants-body">
-                    <tr><td colspan="7" class="empty-state">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <p>Carregando tenants…</p>
-                    </td></tr>
-                </tbody>
-            </table>
+        <!-- Table -->
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.07);">
+                <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;white-space:nowrap;">ID</th>
+                <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Empresa</th>
+                <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Slug</th>
+                <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Plano</th>
+                <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Status</th>
+                <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Criado em</th>
+                <th style="padding:0.875rem 1.5rem;text-align:right;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tenants-body">
+              <tr>
+                <td colspan="7" style="padding:3rem;text-align:center;color:#a98a7e;">
+                  <span class="material-symbols-outlined" style="font-size:32px;display:block;margin-bottom:0.75rem;animation:spin 1s linear infinite;">progress_activity</span>
+                  <p style="font-size:13px;">Carregando tenants…</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+
+      </section>
+
+
+      <!-- CTA Card -->
+      <div class="glass-panel" style="border-radius:24px;padding:2.5rem;display:flex;align-items:center;justify-content:space-between;gap:2rem;overflow:hidden;position:relative;">
+        <div style="position:absolute;right:-80px;top:-80px;width:300px;height:300px;background:rgba(246,96,24,0.12);border-radius:50%;filter:blur(80px);pointer-events:none;"></div>
+        <div style="position:absolute;left:-60px;bottom:-60px;width:240px;height:240px;background:rgba(96,1,209,0.08);border-radius:50%;filter:blur(80px);pointer-events:none;"></div>
+        <div style="position:relative;z-index:1;max-width:600px;">
+          <h2 style="font-family:'Outfit',sans-serif;font-size:1.5rem;font-weight:700;margin-bottom:0.5rem;">Expanda sua Rede IA</h2>
+          <p style="font-size:0.9375rem;color:#e2bfb2;line-height:1.6;">Pronto para provisionar um novo ambiente? O processo de configuração de Tenant leva menos de 2 minutos com nossa infraestrutura escalável.</p>
+          <div style="display:flex;gap:1rem;margin-top:1.5rem;flex-wrap:wrap;">
+            <button onclick="openCreateModal()" class="gradient-bg primary-glow" style="
+              display:flex;align-items:center;gap:8px;
+              padding:0.85rem 1.75rem;border-radius:12px;border:none;
+              color:#4f1700;font-family:'Outfit',sans-serif;font-weight:700;
+              font-size:14px;cursor:pointer;transition:transform 0.15s,opacity 0.2s;
+            " onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+              <span class="material-symbols-outlined" style="font-size:20px;">rocket_launch</span>
+              Provisionar Novo Tenant
+            </button>
+            <button style="
+              display:flex;align-items:center;gap:8px;
+              padding:0.85rem 1.75rem;border-radius:12px;
+              border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);
+              color:#e5e2e3;font-family:'Outfit',sans-serif;font-weight:700;
+              font-size:14px;cursor:pointer;transition:background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.09)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+              Ver Logs de Instalação
+            </button>
+          </div>
+        </div>
+        <div style="position:relative;z-index:1;flex-shrink:0;" class="hidden lg:block" style="display:none;">
+          <div style="width:160px;height:160px;border-radius:50%;border:3px dashed rgba(255,181,153,0.2);display:flex;align-items:center;justify-content:center;animation:spin 20s linear infinite;">
+            <div style="width:110px;height:110px;border-radius:50%;border:2px solid rgba(210,187,255,0.2);display:flex;align-items:center;justify-content:center;animation:spin 10s linear infinite reverse;">
+              <span class="material-symbols-outlined" style="font-size:48px;color:#ffb599;animation:pulse 2s ease-in-out infinite;font-variation-settings:'FILL' 1;">hub</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
     </main>
+  </div>
 </div>
 
-<!-- ─── MODAL: CRIAR TENANT ─── -->
-<div id="create-modal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <div>
-                <h3>Criar Novo Tenant</h3>
-                <p>Adicione um novo cliente à plataforma</p>
-            </div>
-            <button class="btn-close-modal" onclick="closeModal('create-modal')">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <form id="create-form" onsubmit="createTenant(event)">
-            <div class="form-group">
-                <label>Slug <span style="color:var(--text-muted); font-weight:400;">(subdomínio / identificador)</span></label>
-                <input type="text" id="t-slug" required pattern="[a-z0-9-]+" placeholder="ex: lu-decoracoes" title="Apenas letras minúsculas, números e hífens">
-            </div>
-            <div class="form-group">
-                <label>Nome do cliente / empresa</label>
-                <input type="text" id="t-name" required placeholder="ex: Lu Decorações">
-            </div>
-            <div class="form-group">
-                <label>Plano</label>
-                <select id="t-plan">
-                    <option value="basic">Basic — GPT-3.5</option>
-                    <option value="pro" selected>Pro — GPT-4o</option>
-                    <option value="enterprise">Enterprise — Custom</option>
-                </select>
-            </div>
-            <div class="modal-footer">
-                <button type="submit" class="btn-submit">
-                    <i class="fas fa-plus"></i> &nbsp;Criar Tenant
-                </button>
-            </div>
-        </form>
+
+<!-- ── MODAL: CRIAR TENANT ── -->
+<div id="create-modal" class="modal-overlay">
+  <div class="glass-modal modal-content" style="width:100%;max-width:480px;border-radius:20px;padding:2rem;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.75rem;">
+      <div>
+        <h3 style="font-family:'Outfit',sans-serif;font-size:1.25rem;font-weight:700;margin-bottom:0.25rem;">Criar Novo Tenant</h3>
+        <p style="font-size:13px;color:#e2bfb2;opacity:0.8;">Adicione um novo cliente à plataforma Óptima IA</p>
+      </div>
+      <button onclick="closeModal('create-modal')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#e2bfb2;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+      </button>
     </div>
+    <form id="create-form" onsubmit="createTenant(event)">
+      <div style="margin-bottom:1.25rem;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#e2bfb2;letter-spacing:0.04em;margin-bottom:0.5rem;">Slug <span style="color:#a98a7e;font-weight:400;">(subdomínio / identificador)</span></label>
+        <input type="text" id="t-slug" required pattern="[a-z0-9-]+" placeholder="ex: lu-decoracoes" style="
+          width:100%;padding:0.7rem 1rem;border-radius:10px;
+          border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);
+          color:#e5e2e3;font-family:'Inter',sans-serif;font-size:14px;outline:none;
+          transition:border-color 0.2s,box-shadow 0.2s;
+        " onfocus="this.style.borderColor='rgba(246,96,24,0.5)';this.style.boxShadow='0 0 0 3px rgba(246,96,24,0.12)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.boxShadow='none'"/>
+      </div>
+      <div style="margin-bottom:1.25rem;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#e2bfb2;letter-spacing:0.04em;margin-bottom:0.5rem;">Nome do cliente / empresa</label>
+        <input type="text" id="t-name" required placeholder="ex: Lu Decorações" style="
+          width:100%;padding:0.7rem 1rem;border-radius:10px;
+          border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);
+          color:#e5e2e3;font-family:'Inter',sans-serif;font-size:14px;outline:none;
+          transition:border-color 0.2s,box-shadow 0.2s;
+        " onfocus="this.style.borderColor='rgba(246,96,24,0.5)';this.style.boxShadow='0 0 0 3px rgba(246,96,24,0.12)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.boxShadow='none'"/>
+      </div>
+      <div style="margin-bottom:1.75rem;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#e2bfb2;letter-spacing:0.04em;margin-bottom:0.5rem;">Plano</label>
+        <select id="t-plan" style="
+          width:100%;padding:0.7rem 1rem;border-radius:10px;
+          border:1px solid rgba(255,255,255,0.1);background:rgba(14,12,16,0.95);
+          color:#e5e2e3;font-family:'Inter',sans-serif;font-size:14px;outline:none;cursor:pointer;
+          transition:border-color 0.2s;
+        " onfocus="this.style.borderColor='rgba(246,96,24,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+          <option value="basic">Basic — GPT-3.5</option>
+          <option value="pro" selected>Pro — GPT-4o</option>
+          <option value="enterprise">Enterprise — Custom</option>
+        </select>
+      </div>
+      <button type="submit" class="gradient-bg primary-glow" style="
+        width:100%;padding:0.85rem;border-radius:10px;border:none;
+        color:#4f1700;font-family:'Outfit',sans-serif;font-weight:700;
+        font-size:15px;cursor:pointer;transition:opacity 0.2s,transform 0.15s;
+        display:flex;align-items:center;justify-content:center;gap:8px;
+      " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">
+        <span class="material-symbols-outlined" style="font-size:18px;">add</span>
+        Criar Tenant
+      </button>
+    </form>
+  </div>
 </div>
 
-<!-- ─── MODAL: CONFIGURAR AGENTE ─── -->
-<div id="config-modal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <div>
-                <h3>Configurações do Agente</h3>
-                <p>Ajuste o comportamento do agente IA deste tenant</p>
-            </div>
-            <button class="btn-close-modal" onclick="closeModal('config-modal')">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <form id="config-form" onsubmit="updateConfig(event)">
-            <input type="hidden" id="c-tenant-id">
-            <div class="form-group">
-                <label>Modelo LLM <span style="color:var(--text-muted); font-weight:400;">(override)</span></label>
-                <input type="text" id="c-model" placeholder="ex: gpt-4o ou claude-sonnet-4-5">
-            </div>
-            <div class="form-group">
-                <label>WhatsApp do atendente <span style="color:var(--text-muted); font-weight:400;">(transbordo)</span></label>
-                <input type="text" id="c-human" placeholder="ex: 5511999999999">
-            </div>
-            <div class="form-divider"></div>
-            <div class="form-group">
-                <label>System Prompt customizado <span style="color:var(--text-muted); font-weight:400;">(opcional)</span></label>
-                <textarea id="c-prompt" placeholder="Instruções específicas para este cliente…"></textarea>
-            </div>
-            <div class="modal-footer">
-                <button type="submit" class="btn-submit">
-                    <i class="fas fa-save"></i> &nbsp;Salvar Configurações
-                </button>
-            </div>
-        </form>
+
+<!-- ── MODAL: CONFIGURAR AGENTE ── -->
+<div id="config-modal" class="modal-overlay">
+  <div class="glass-modal modal-content" style="width:100%;max-width:480px;border-radius:20px;padding:2rem;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.75rem;">
+      <div>
+        <h3 style="font-family:'Outfit',sans-serif;font-size:1.25rem;font-weight:700;margin-bottom:0.25rem;">Configurações do Agente</h3>
+        <p style="font-size:13px;color:#e2bfb2;opacity:0.8;">Ajuste o comportamento da IA deste tenant</p>
+      </div>
+      <button onclick="closeModal('config-modal')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#e2bfb2;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+      </button>
     </div>
+    <form id="config-form" onsubmit="updateConfig(event)">
+      <input type="hidden" id="c-tenant-id"/>
+      <div style="margin-bottom:1.25rem;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#e2bfb2;letter-spacing:0.04em;margin-bottom:0.5rem;">Modelo LLM <span style="color:#a98a7e;font-weight:400;">(override)</span></label>
+        <input type="text" id="c-model" placeholder="ex: gpt-4o ou claude-sonnet-4-5" style="
+          width:100%;padding:0.7rem 1rem;border-radius:10px;
+          border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);
+          color:#e5e2e3;font-family:'Inter',sans-serif;font-size:14px;outline:none;
+          transition:border-color 0.2s,box-shadow 0.2s;
+        " onfocus="this.style.borderColor='rgba(246,96,24,0.5)';this.style.boxShadow='0 0 0 3px rgba(246,96,24,0.12)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.boxShadow='none'"/>
+      </div>
+      <div style="margin-bottom:1.25rem;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#e2bfb2;letter-spacing:0.04em;margin-bottom:0.5rem;">WhatsApp do atendente <span style="color:#a98a7e;font-weight:400;">(transbordo)</span></label>
+        <input type="text" id="c-human" placeholder="ex: 5511999999999" style="
+          width:100%;padding:0.7rem 1rem;border-radius:10px;
+          border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);
+          color:#e5e2e3;font-family:'Inter',sans-serif;font-size:14px;outline:none;
+          transition:border-color 0.2s,box-shadow 0.2s;
+        " onfocus="this.style.borderColor='rgba(246,96,24,0.5)';this.style.boxShadow='0 0 0 3px rgba(246,96,24,0.12)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.boxShadow='none'"/>
+      </div>
+      <div style="height:1px;background:rgba(255,255,255,0.07);margin-bottom:1.25rem;"></div>
+      <div style="margin-bottom:1.75rem;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#e2bfb2;letter-spacing:0.04em;margin-bottom:0.5rem;">System Prompt customizado <span style="color:#a98a7e;font-weight:400;">(opcional)</span></label>
+        <textarea id="c-prompt" rows="4" placeholder="Instruções específicas para este cliente…" style="
+          width:100%;padding:0.7rem 1rem;border-radius:10px;resize:vertical;
+          border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);
+          color:#e5e2e3;font-family:'Inter',sans-serif;font-size:14px;outline:none;
+          line-height:1.6;min-height:100px;transition:border-color 0.2s,box-shadow 0.2s;
+        " onfocus="this.style.borderColor='rgba(246,96,24,0.5)';this.style.boxShadow='0 0 0 3px rgba(246,96,24,0.12)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.boxShadow='none'"></textarea>
+      </div>
+      <button type="submit" class="gradient-bg primary-glow" style="
+        width:100%;padding:0.85rem;border-radius:10px;border:none;
+        color:#4f1700;font-family:'Outfit',sans-serif;font-weight:700;
+        font-size:15px;cursor:pointer;transition:opacity 0.2s,transform 0.15s;
+        display:flex;align-items:center;justify-content:center;gap:8px;
+      " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">
+        <span class="material-symbols-outlined" style="font-size:18px;">save</span>
+        Salvar Configurações
+      </button>
+    </form>
+  </div>
 </div>
 
-<!-- ─── TOAST ─── -->
-<div id="toast" class="toast">
-    <i class="toast-icon fas fa-check-circle"></i>
-    <span class="message">Mensagem</span>
+
+<!-- ── TOAST ── -->
+<div id="toast">
+  <span class="material-symbols-outlined" id="toast-icon" style="font-size:20px;flex-shrink:0;">check_circle</span>
+  <span id="toast-message">Mensagem</span>
 </div>
+
+
+<!-- ── ANIMATIONS ── -->
+<style>
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+</style>
+
 
 <script>
-    let masterKey = localStorage.getItem('master_key') || '';
-    if (masterKey) login(masterKey);
+  let masterKey = localStorage.getItem('master_key') || '';
+  if (masterKey) loginWithKey(masterKey);
 
-    async function login(storedKey = null) {
-        const key = storedKey || document.getElementById('master-key-input').value;
-        if (!key) return;
-        try {
-            const res = await fetch('/api/master/stats', { headers: { 'X-Master-Key': key } });
-            if (res.ok) {
-                masterKey = key;
-                localStorage.setItem('master_key', key);
-                document.getElementById('login-overlay').style.display = 'none';
-                document.getElementById('app').style.display = 'flex';
-                const stats = await res.json();
-                document.getElementById('stat-total').innerText = stats.total_tenants;
-                document.getElementById('stat-active').innerText = stats.active_tenants;
-                loadTenants();
-                showToast('Login efetuado com sucesso', 'success');
-            } else {
-                showToast('Master Key inválida', 'error');
-                localStorage.removeItem('master_key');
-                document.getElementById('master-key-input').value = '';
-            }
-        } catch (err) {
-            showToast('Erro de conexão com o servidor', 'error');
-        }
-    }
+  async function login() {
+    const key = document.getElementById('master-key-input').value;
+    if (!key) return;
+    await loginWithKey(key);
+  }
 
-    function logout() {
+  async function loginWithKey(key) {
+    try {
+      const res = await fetch('/api/master/stats', { headers: { 'X-Master-Key': key } });
+      if (res.ok) {
+        masterKey = key;
+        localStorage.setItem('master_key', key);
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        const stats = await res.json();
+        document.getElementById('stat-total').innerText = stats.total_tenants;
+        document.getElementById('stat-active').innerText = stats.active_tenants;
+        loadTenants();
+        showToast('Login efetuado com sucesso', 'success');
+      } else {
+        showToast('Master Key inválida', 'error');
         localStorage.removeItem('master_key');
-        masterKey = '';
-        document.getElementById('login-overlay').style.display = 'flex';
-        document.getElementById('app').style.display = 'none';
         document.getElementById('master-key-input').value = '';
+      }
+    } catch (err) {
+      showToast('Erro de conexão com o servidor', 'error');
     }
+  }
 
-    async function api(path, options = {}) {
-        options.headers = { ...options.headers, 'X-Master-Key': masterKey, 'Content-Type': 'application/json' };
-        const res = await fetch(`/api/master${path}`, options);
-        if (!res.ok) {
-            if (res.status === 403) logout();
-            const data = await res.json().catch(() => ({}));
-            throw new Error(data.detail || 'Erro na requisição');
-        }
-        return res.json();
+  function logout() {
+    localStorage.removeItem('master_key');
+    masterKey = '';
+    document.getElementById('login-overlay').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('master-key-input').value = '';
+  }
+
+  async function api(path, options = {}) {
+    options.headers = { ...options.headers, 'X-Master-Key': masterKey, 'Content-Type': 'application/json' };
+    const res = await fetch(`/api/master${path}`, options);
+    if (!res.ok) {
+      if (res.status === 403) logout();
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || 'Erro na requisição');
     }
+    return res.json();
+  }
 
-    const PLAN_LABELS = { basic: 'Basic', pro: 'Pro', enterprise: 'Enterprise' };
+  const PLAN_LABELS = { basic: 'Basic', pro: 'Pro', enterprise: 'Enterprise' };
+  const PLAN_STYLES = {
+    basic: 'background:rgba(169,138,126,0.12);color:#e2bfb2;border:1px solid rgba(169,138,126,0.3);',
+    pro: 'background:rgba(210,187,255,0.12);color:#d2bbff;border:1px solid rgba(210,187,255,0.25);',
+    enterprise: 'background:rgba(246,96,24,0.12);color:#ffb599;border:1px solid rgba(246,96,24,0.3);'
+  };
 
-    async function loadTenants() {
-        try {
-            const tenants = await api('/tenants');
-            const tbody = document.getElementById('tenants-body');
-            tbody.innerHTML = '';
-            if (!tenants.length) {
-                tbody.innerHTML = `<tr><td colspan="7" class="empty-state">
-                    <i class="fas fa-layer-group"></i>
-                    <p>Nenhum tenant encontrado. Crie o primeiro!</p>
-                </td></tr>`;
-                return;
-            }
-            tenants.forEach(t => {
-                const date = new Date(t.created_at).toLocaleDateString('pt-BR');
-                const isActive = t.is_active;
-                const planClass = `plan-${t.plan}`;
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="td-id">#${t.id}</td>
-                    <td><span class="td-slug">${t.slug}</span></td>
-                    <td class="td-name">${t.name}</td>
-                    <td><span class="badge-plan ${planClass}">${PLAN_LABELS[t.plan] || t.plan}</span></td>
-                    <td><span class="badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? 'Ativo' : 'Inativo'}</span></td>
-                    <td style="color:var(--text-secondary);">${date}</td>
-                    <td>
-                        <div class="row-actions">
-                            <button class="btn-row ${isActive ? '' : 'success-btn'}" onclick="toggleActive(${t.id}, ${!isActive})" title="${isActive ? 'Desativar' : 'Ativar'}">
-                                <i class="fas fa-${isActive ? 'ban' : 'check'}"></i>
-                            </button>
-                            <button class="btn-row" onclick="openConfigModal(${t.id})" title="Configurar agente">
-                                <i class="fas fa-robot"></i>
-                            </button>
-                            <button class="btn-row danger" onclick="deleteTenant(${t.id}, '${t.slug}')" title="Excluir">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </div>
-                    </td>`;
-                tbody.appendChild(tr);
-            });
-        } catch (err) {
-            showToast(err.message, 'error');
-        }
+  let allTenants = [];
+
+  async function loadTenants() {
+    try {
+      allTenants = await api('/tenants');
+      renderTenants(allTenants);
+    } catch (err) {
+      showToast(err.message, 'error');
     }
+  }
 
-    function openCreateModal() { document.getElementById('create-modal').classList.add('active'); }
-
-    function closeModal(id) {
-        document.getElementById(id).classList.remove('active');
-        if (id === 'create-modal') document.getElementById('create-form').reset();
-        if (id === 'config-modal') document.getElementById('config-form').reset();
+  function renderTenants(tenants) {
+    const tbody = document.getElementById('tenants-body');
+    tbody.innerHTML = '';
+    if (!tenants.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="padding:3rem;text-align:center;color:#a98a7e;">
+        <span class="material-symbols-outlined" style="font-size:32px;display:block;margin-bottom:0.75rem;opacity:0.5;">corporate_fare</span>
+        <p style="font-size:13px;">Nenhum tenant encontrado. Crie o primeiro!</p>
+      </td></tr>`;
+      return;
     }
+    tenants.forEach(t => {
+      const date = t.created_at ? new Date(t.created_at).toLocaleDateString('pt-BR') : '—';
+      const isActive = t.is_active;
+      const initial = (t.name || t.slug || '?')[0].toUpperCase();
+      const planKey = (t.plan || 'basic').toLowerCase();
+      const planStyle = PLAN_STYLES[planKey] || PLAN_STYLES.basic;
+      const planLabel = PLAN_LABELS[planKey] || planKey;
 
-    async function createTenant(e) {
-        e.preventDefault();
-        const data = {
-            slug: document.getElementById('t-slug').value,
-            name: document.getElementById('t-name').value,
-            plan: document.getElementById('t-plan').value,
-            is_active: true
-        };
-        try {
-            await api('/tenants', { method: 'POST', body: JSON.stringify(data) });
-            closeModal('create-modal');
-            showToast('Tenant criado com sucesso!', 'success');
-            login(masterKey);
-        } catch (err) {
-            showToast(err.message, 'error');
-        }
-    }
-
-    async function toggleActive(id, newState) {
-        try {
-            await api(`/tenants/${id}`, { method: 'PATCH', body: JSON.stringify({ is_active: newState }) });
-            login(masterKey);
-        } catch (err) {
-            showToast(err.message, 'error');
-        }
-    }
-
-    async function deleteTenant(id, slug) {
-        if (confirm(`Desativar permanentemente o tenant "${slug}"?`)) toggleActive(id, false);
-    }
-
-    async function openConfigModal(id) {
-        document.getElementById('c-tenant-id').value = id;
-        try {
-            const cfg = await api(`/tenants/${id}/agent-config`);
-            document.getElementById('c-model').value = cfg.llm_model || '';
-            document.getElementById('c-human').value = cfg.human_agent_whatsapp || '';
-            document.getElementById('c-prompt').value = cfg.system_prompt || '';
-            document.getElementById('config-modal').classList.add('active');
-        } catch (err) {
-            showToast('Erro ao carregar configurações', 'error');
-        }
-    }
-
-    async function updateConfig(e) {
-        e.preventDefault();
-        const id = document.getElementById('c-tenant-id').value;
-        const data = {
-            llm_model: document.getElementById('c-model').value || null,
-            human_agent_whatsapp: document.getElementById('c-human').value || null,
-            system_prompt: document.getElementById('c-prompt').value || null
-        };
-        try {
-            await api(`/tenants/${id}/agent-config`, { method: 'PATCH', body: JSON.stringify(data) });
-            closeModal('config-modal');
-            showToast('Configurações salvas!', 'success');
-        } catch (err) {
-            showToast(err.message, 'error');
-        }
-    }
-
-    let toastTimer;
-    function showToast(message, type = 'success') {
-        const el = document.getElementById('toast');
-        el.className = `toast show ${type}`;
-        el.querySelector('.message').innerText = message;
-        el.querySelector('.toast-icon').className = `toast-icon fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}`;
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
-    }
-
-    document.querySelectorAll('.modal').forEach(m => {
-        m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); });
+      const tr = document.createElement('tr');
+      tr.setAttribute('data-name', (t.name || '').toLowerCase());
+      tr.setAttribute('data-slug', (t.slug || '').toLowerCase());
+      tr.innerHTML = `
+        <td style="padding:1rem 1.5rem;font-size:12px;font-family:monospace;color:#a98a7e;opacity:0.8;">#${t.id}</td>
+        <td style="padding:1rem 1.5rem;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:34px;height:34px;border-radius:10px;background:rgba(255,181,153,0.15);display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;color:#ffb599;flex-shrink:0;">${initial}</div>
+            <span style="font-weight:600;font-size:14px;">${t.name || t.slug}</span>
+          </div>
+        </td>
+        <td style="padding:1rem 1.5rem;font-size:12px;font-family:monospace;color:#e2bfb2;opacity:0.7;">${t.slug}</td>
+        <td style="padding:1rem 1.5rem;"><span style="${planStyle}font-size:10px;padding:3px 10px;border-radius:99px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;">${planLabel}</span></td>
+        <td style="padding:1rem 1.5rem;">
+          <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:${isActive ? '#10b981' : '#ef4444'};">
+            <span style="width:7px;height:7px;border-radius:50%;background:${isActive ? '#10b981' : '#ef4444'};${isActive ? 'box-shadow:0 0 8px #10b981;' : ''}"></span>
+            ${isActive ? 'Ativo' : 'Inativo'}
+          </span>
+        </td>
+        <td style="padding:1rem 1.5rem;font-size:13px;color:#a98a7e;">${date}</td>
+        <td style="padding:1rem 1.5rem;text-align:right;">
+          <div style="display:flex;gap:6px;justify-content:flex-end;">
+            <button onclick="toggleActive(${t.id}, ${!isActive})" title="${isActive ? 'Desativar' : 'Ativar'}" style="
+              width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;
+              cursor:pointer;display:flex;align-items:center;justify-content:center;
+              color:#a98a7e;transition:all 0.2s;
+            " onmouseover="this.style.background='rgba(${isActive ? '239,68,68' : '16,185,129'},0.12)';this.style.color='${isActive ? '#ef4444' : '#10b981'}';this.style.borderColor='rgba(${isActive ? '239,68,68' : '16,185,129'},0.3)'" onmouseout="this.style.background='transparent';this.style.color='#a98a7e';this.style.borderColor='rgba(255,255,255,0.1)'">
+              <span class="material-symbols-outlined" style="font-size:18px;">${isActive ? 'block' : 'check_circle'}</span>
+            </button>
+            <button onclick="openConfigModal(${t.id})" title="Configurar agente" style="
+              width:34px;height:34px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;
+              cursor:pointer;display:flex;align-items:center;justify-content:center;
+              color:#a98a7e;transition:all 0.2s;
+            " onmouseover="this.style.background='rgba(255,181,153,0.12)';this.style.color='#ffb599';this.style.borderColor='rgba(255,181,153,0.3)'" onmouseout="this.style.background='transparent';this.style.color='#a98a7e';this.style.borderColor='rgba(255,255,255,0.1)'">
+              <span class="material-symbols-outlined" style="font-size:18px;">smart_toy</span>
+            </button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
     });
+  }
+
+  function filterTenants() {
+    const q = document.getElementById('tenant-search').value.toLowerCase();
+    const rows = document.querySelectorAll('#tenants-body tr');
+    rows.forEach(row => {
+      const name = row.getAttribute('data-name') || '';
+      const slug = row.getAttribute('data-slug') || '';
+      row.style.display = (name.includes(q) || slug.includes(q)) ? '' : 'none';
+    });
+  }
+
+  function openCreateModal() { document.getElementById('create-modal').classList.add('active'); }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+    if (id === 'create-modal') document.getElementById('create-form').reset();
+    if (id === 'config-modal') document.getElementById('config-form').reset();
+  }
+
+  async function createTenant(e) {
+    e.preventDefault();
+    const data = {
+      slug: document.getElementById('t-slug').value,
+      name: document.getElementById('t-name').value,
+      plan: document.getElementById('t-plan').value,
+      is_active: true
+    };
+    try {
+      await api('/tenants', { method: 'POST', body: JSON.stringify(data) });
+      closeModal('create-modal');
+      showToast('Tenant criado com sucesso!', 'success');
+      loginWithKey(masterKey);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  async function toggleActive(id, newState) {
+    try {
+      await api(`/tenants/${id}`, { method: 'PATCH', body: JSON.stringify({ is_active: newState }) });
+      showToast(newState ? 'Tenant ativado' : 'Tenant desativado', 'success');
+      loginWithKey(masterKey);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  async function openConfigModal(id) {
+    document.getElementById('c-tenant-id').value = id;
+    try {
+      const cfg = await api(`/tenants/${id}/agent-config`);
+      document.getElementById('c-model').value = cfg.llm_model || '';
+      document.getElementById('c-human').value = cfg.human_agent_whatsapp || '';
+      document.getElementById('c-prompt').value = cfg.system_prompt || '';
+      document.getElementById('config-modal').classList.add('active');
+    } catch (err) {
+      showToast('Erro ao carregar configurações', 'error');
+    }
+  }
+
+  async function updateConfig(e) {
+    e.preventDefault();
+    const id = document.getElementById('c-tenant-id').value;
+    const data = {
+      llm_model: document.getElementById('c-model').value || null,
+      human_agent_whatsapp: document.getElementById('c-human').value || null,
+      system_prompt: document.getElementById('c-prompt').value || null
+    };
+    try {
+      await api(`/tenants/${id}/agent-config`, { method: 'PATCH', body: JSON.stringify(data) });
+      closeModal('config-modal');
+      showToast('Configurações salvas!', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  let toastTimer;
+  function showToast(message, type = 'success') {
+    const el = document.getElementById('toast');
+    const icon = document.getElementById('toast-icon');
+    const msg = document.getElementById('toast-message');
+    el.className = `show ${type}`;
+    icon.innerText = type === 'success' ? 'check_circle' : 'error';
+    icon.style.color = type === 'success' ? '#10b981' : '#ef4444';
+    msg.innerText = message;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+  }
+
+  // Close modals on backdrop click
+  document.querySelectorAll('.modal-overlay').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); });
+  });
 </script>
+
 </body>
 </html>

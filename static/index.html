@@ -1,297 +1,538 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html class="dark" lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Óptima IA — Lara CRM Dashboard</title>
-    <!-- Google Fonts: Outfit & Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        outfit: ['Outfit', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#fff1f2',
-                            100: '#ffe4e6',
-                            200: '#fecdd3',
-                            500: '#f43f5e',
-                            600: '#e11d48',
-                            700: '#be123c',
-                        },
-                        glass: {
-                            DEFAULT: 'rgba(255, 255, 255, 0.03)',
-                            hover: 'rgba(255, 255, 255, 0.07)',
-                            border: 'rgba(255, 255, 255, 0.08)',
-                            card: 'rgba(15, 23, 42, 0.6)',
-                        }
-                    }
-                }
-            }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Óptima IA — Lara CRM Dashboard</title>
+<meta name="description" content="Dashboard CRM do agente Lara da Óptima IA. Visualize leads, negócios, conversas e agendamentos em tempo real."/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "primary": "#ffb599",
+        "primary-container": "#f66018",
+        "on-primary": "#5a1c00",
+        "secondary": "#d2bbff",
+        "tertiary": "#ffb1c7",
+        "tertiary-container": "#ff4993",
+        "surface": "#131314",
+        "surface-container-lowest": "#0e0e0f",
+        "surface-container-low": "#1c1b1d",
+        "surface-container": "#201f21",
+        "surface-container-high": "#2a2a2b",
+        "surface-container-highest": "#353436",
+        "on-surface": "#e5e2e3",
+        "on-surface-variant": "#e2bfb2",
+        "outline": "#a98a7e",
+        "glass-surface": "rgba(255, 255, 255, 0.03)",
+        "glass-border": "rgba(255, 255, 255, 0.08)",
+        "success": "#10b981",
+        "warning": "#f59e0b",
+        "error": "#ef4444",
+        "brand": {
+          "500": "#ffb599",
+          "600": "#f66018",
         }
-    </script>
-    <!-- Custom Style Sheet -->
-    <link rel="stylesheet" href="/static/style.css">
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      }
+    }
+  }
+}
+</script>
+<style>
+  * { box-sizing: border-box; }
+  body { background-color: #070708; color: #e5e2e3; font-family: 'Inter', sans-serif; overflow: hidden; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,181,153,0.2); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,181,153,0.4); }
+
+  .glass-card {
+    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top-color: rgba(255,255,255,0.12);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .gradient-text {
+    background: linear-gradient(135deg, #f66018 0%, #ff4993 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .gradient-bg { background: linear-gradient(135deg, #f66018 0%, #ff4993 100%); }
+  .ai-gradient { background: linear-gradient(135deg, #f66018 0%, #ff4993 100%); }
+  .glow-orange { box-shadow: 0 0 24px rgba(246,96,24,0.35); }
+
+  /* Sidebar */
+  .sidebar-item-active {
+    background: rgba(255,181,153,0.1);
+    border-right: 2px solid #ffb599;
+    color: #ffb599 !important;
+    opacity: 1 !important;
+  }
+
+  /* Nav tab sections */
+  .tab-section { animation: fadeIn 0.25s ease-out; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  /* Chart override */
+  canvas { max-height: 100%; }
+
+  /* Badge styles for kanban/table */
+  .badge-novo       { background: rgba(210,187,255,0.15); color: #d2bbff; border: 1px solid rgba(210,187,255,0.3); }
+  .badge-qual       { background: rgba(246,96,24,0.15);   color: #ffb599; border: 1px solid rgba(246,96,24,0.3); }
+  .badge-alinha     { background: rgba(245,158,11,0.15);  color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+  .badge-humano     { background: rgba(16,185,129,0.15);  color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+
+  @keyframes spin { from{transform:rotate(0deg)}to{transform:rotate(360deg)} }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.5} }
+</style>
 </head>
-<body class="bg-[#0b0f19] text-[#e2e8f0] font-sans antialiased overflow-hidden min-h-screen flex">
-    
-    <!-- Background Glow Blobs -->
-    <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-brand-600/10 blur-[120px] pointer-events-none z-0"></div>
-    <div class="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-600/10 blur-[150px] pointer-events-none z-0"></div>
+<body style="display:flex;min-height:100vh;">
 
-    <!-- Sidebar Navigation -->
-    <aside class="w-64 border-r border-glass-border bg-glass backdrop-blur-xl p-6 flex flex-col justify-between z-10">
-        <div>
-            <!-- Logo & Brand -->
-            <div class="flex items-center gap-3 mb-10 px-2">
-                <div class="p-2 rounded-xl bg-gradient-to-tr from-brand-600 to-rose-400 text-white shadow-lg shadow-brand-600/20">
-                    <i data-lucide="sparkles" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <h1 class="font-outfit font-bold text-lg leading-none text-white tracking-wide">Óptima IA</h1>
-                    <span class="text-[10px] text-brand-500 font-bold tracking-widest uppercase">Lara Agent × CRM</span>
-                </div>
-            </div>
+<!-- Background glows -->
+<div style="position:fixed;top:-15%;left:-10%;width:55%;height:55%;border-radius:50%;background:rgba(246,96,24,0.06);filter:blur(120px);pointer-events:none;z-index:0;"></div>
+<div style="position:fixed;bottom:-15%;right:-10%;width:60%;height:60%;border-radius:50%;background:rgba(96,1,209,0.05);filter:blur(150px);pointer-events:none;z-index:0;"></div>
 
-            <!-- Nav Links -->
-            <nav class="space-y-1">
-                <button onclick="switchTab('overview')" id="btn-overview" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition duration-200 text-sm font-semibold group bg-brand-600/10 text-brand-500 shadow-sm border border-brand-500/20">
-                    <i data-lucide="layout-dashboard" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
-                    <span>Painel Geral</span>
-                </button>
-                <button onclick="switchTab('kanban')" id="btn-kanban" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition duration-200 text-sm font-semibold group text-slate-400 hover:bg-glass-hover hover:text-white border border-transparent">
-                    <i data-lucide="columns-3" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
-                    <span>Quadro Kanban</span>
-                </button>
-                <button onclick="switchTab('leads')" id="btn-leads" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition duration-200 text-sm font-semibold group text-slate-400 hover:bg-glass-hover hover:text-white border border-transparent">
-                    <i data-lucide="users" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
-                    <span>Clientes & Chats</span>
-                </button>
-                <button onclick="switchTab('agenda')" id="btn-agenda" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition duration-200 text-sm font-semibold group text-slate-400 hover:bg-glass-hover hover:text-white border border-transparent">
-                    <i data-lucide="calendar" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
-                    <span>Agenda de Eventos</span>
-                </button>
-            </nav>
+
+<!-- ── SIDEBAR ── -->
+<aside style="
+  width:256px;height:100vh;position:fixed;left:0;top:0;overflow-y:auto;
+  backdrop-filter:blur(20px);background:rgba(255,255,255,0.03);
+  border-right:1px solid rgba(255,255,255,0.08);
+  box-shadow:4px 0 40px rgba(0,0,0,0.5);z-index:50;
+  display:flex;flex-direction:column;padding:1.5rem 0;
+">
+  <!-- Brand -->
+  <div style="padding:0 1.5rem;margin-bottom:2.5rem;">
+    <h1 style="font-family:'Outfit',sans-serif;font-size:2.5rem;font-weight:800;letter-spacing:-0.03em;line-height:1.1;" class="gradient-text">Óptima<br>IA</h1>
+    <p style="font-size:11px;letter-spacing:0.1em;font-weight:600;color:#e2bfb2;opacity:0.7;text-transform:uppercase;margin-top:0.4rem;">CRM Intelligence</p>
+  </div>
+
+  <!-- Nav -->
+  <nav style="flex:1;display:flex;flex-direction:column;gap:2px;">
+    <button id="btn-overview" onclick="switchTab('overview')" style="
+      display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;
+      border:none;border-right:2px solid transparent;background:transparent;
+      font-family:'Inter',sans-serif;font-size:12px;font-weight:700;
+      letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;
+      color:#e2bfb2;opacity:0.7;text-align:left;
+      transition:all 0.2s;width:100%;
+    " onmouseover="if(!this.classList.contains('active-nav')){this.style.background='rgba(255,255,255,0.04)';this.style.opacity='1'}" onmouseout="if(!this.classList.contains('active-nav')){this.style.background='transparent';this.style.opacity='0.7'}">
+      <span class="material-symbols-outlined" style="font-size:20px;">dashboard</span> Painel Geral
+    </button>
+    <button id="btn-kanban" onclick="switchTab('kanban')" style="
+      display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;
+      border:none;border-right:2px solid transparent;background:transparent;
+      font-family:'Inter',sans-serif;font-size:12px;font-weight:700;
+      letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;
+      color:#e2bfb2;opacity:0.7;text-align:left;
+      transition:all 0.2s;width:100%;
+    " onmouseover="if(!this.classList.contains('active-nav')){this.style.background='rgba(255,255,255,0.04)';this.style.opacity='1'}" onmouseout="if(!this.classList.contains('active-nav')){this.style.background='transparent';this.style.opacity='0.7'}">
+      <span class="material-symbols-outlined" style="font-size:20px;">view_kanban</span> Quadro Kanban
+    </button>
+    <button id="btn-leads" onclick="switchTab('leads')" style="
+      display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;
+      border:none;border-right:2px solid transparent;background:transparent;
+      font-family:'Inter',sans-serif;font-size:12px;font-weight:700;
+      letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;
+      color:#e2bfb2;opacity:0.7;text-align:left;
+      transition:all 0.2s;width:100%;
+    " onmouseover="if(!this.classList.contains('active-nav')){this.style.background='rgba(255,255,255,0.04)';this.style.opacity='1'}" onmouseout="if(!this.classList.contains('active-nav')){this.style.background='transparent';this.style.opacity='0.7'}">
+      <span class="material-symbols-outlined" style="font-size:20px;">group</span> Clientes & Chats
+    </button>
+    <button id="btn-agenda" onclick="switchTab('agenda')" style="
+      display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;
+      border:none;border-right:2px solid transparent;background:transparent;
+      font-family:'Inter',sans-serif;font-size:12px;font-weight:700;
+      letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;
+      color:#e2bfb2;opacity:0.7;text-align:left;
+      transition:all 0.2s;width:100%;
+    " onmouseover="if(!this.classList.contains('active-nav')){this.style.background='rgba(255,255,255,0.04)';this.style.opacity='1'}" onmouseout="if(!this.classList.contains('active-nav')){this.style.background='transparent';this.style.opacity='0.7'}">
+      <span class="material-symbols-outlined" style="font-size:20px;">calendar_month</span> Agenda
+    </button>
+  </nav>
+
+  <!-- Status footer -->
+  <div style="padding:0 1.25rem;margin-top:auto;">
+    <div style="
+      padding:0.875rem 1rem;border-radius:12px;
+      background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15);
+      text-align:center;
+    ">
+      <p style="font-size:11px;color:#a98a7e;letter-spacing:0.06em;text-transform:uppercase;font-weight:600;margin-bottom:0.4rem;">CRM Database</p>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;animation:pulse 2s ease-in-out infinite;"></span>
+        <span style="font-size:12px;font-weight:700;color:#10b981;letter-spacing:0.04em;">Supabase Online</span>
+      </div>
+    </div>
+  </div>
+</aside>
+
+
+<!-- ── MAIN CONTENT ── -->
+<main style="margin-left:256px;flex:1;display:flex;flex-direction:column;min-width:0;position:relative;z-index:1;">
+
+  <!-- ── TOPBAR ── -->
+  <header style="
+    height:64px;position:sticky;top:0;z-index:40;
+    backdrop-filter:blur(16px);background:rgba(7,7,8,0.7);
+    border-bottom:1px solid rgba(255,255,255,0.08);
+    display:flex;align-items:center;justify-content:space-between;padding:0 2rem;
+  ">
+    <h2 id="page-title" style="font-family:'Outfit',sans-serif;font-size:1.125rem;font-weight:700;letter-spacing:-0.01em;">Dashboard Geral</h2>
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <!-- Search -->
+      <div id="search-bar" style="position:relative;">
+        <span class="material-symbols-outlined" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#a98a7e;font-size:18px;">search</span>
+        <input type="text" id="lead-search-input" onkeyup="filterLeadsTable()" placeholder="Buscar contato..." style="
+          background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
+          border-radius:99px;padding:0.5rem 1rem 0.5rem 2.5rem;
+          color:#e5e2e3;font-family:'Inter',sans-serif;font-size:13px;
+          outline:none;width:220px;transition:border-color 0.2s,box-shadow 0.2s;
+        " onfocus="this.style.borderColor='rgba(246,96,24,0.5)';this.style.boxShadow='0 0 0 2px rgba(246,96,24,0.12)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.boxShadow='none'"/>
+      </div>
+      <!-- Agent online badge -->
+      <div style="display:flex;align-items:center;gap:8px;padding:0.4rem 0.875rem;border-radius:99px;border:1px solid rgba(255,181,153,0.2);background:rgba(255,181,153,0.06);">
+        <span style="width:7px;height:7px;border-radius:50%;background:#ffb599;animation:pulse 2s ease-in-out infinite;box-shadow:0 0 8px rgba(255,181,153,0.6);"></span>
+        <span style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#ffb599;">Agente Lara Online</span>
+      </div>
+    </div>
+  </header>
+
+
+  <!-- ── INNER SCROLL ── -->
+  <div id="content-container" style="flex:1;overflow-y:auto;padding:2rem;max-height:calc(100vh - 64px);">
+
+
+    <!-- ──────────────────────────── -->
+    <!-- TAB: OVERVIEW (DEFAULT)       -->
+    <!-- ──────────────────────────── -->
+    <section id="tab-overview" class="tab-section" style="display:block;">
+
+      <!-- Stats Row -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.25rem;margin-bottom:1.75rem;">
+
+        <!-- Leads Novos -->
+        <div class="glass-card" style="border-radius:20px;padding:1.5rem;position:relative;overflow:hidden;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(255,181,153,0.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+          <div style="position:absolute;right:-16px;top:-16px;width:100px;height:100px;background:rgba(255,181,153,0.08);border-radius:50%;filter:blur(20px);"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
+            <span class="material-symbols-outlined" style="font-size:22px;color:#ffb599;padding:8px;background:rgba(255,181,153,0.12);border-radius:10px;">person_add</span>
+          </div>
+          <p style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#e2bfb2;margin-bottom:0.375rem;">Total de Leads</p>
+          <h3 id="stat-total-contacts" style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-0.03em;line-height:1;">0</h3>
         </div>
 
-        <!-- Footer Info -->
-        <div class="p-4 rounded-xl border border-glass-border bg-glass/40 text-center">
-            <p class="text-[11px] text-slate-400 mb-1">CRM Database Status</p>
-            <div class="flex items-center justify-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span class="text-xs font-bold text-slate-200">SQLite Conectado</span>
-            </div>
+        <!-- Negócios -->
+        <div class="glass-card" style="border-radius:20px;padding:1.5rem;position:relative;overflow:hidden;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(210,187,255,0.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+          <div style="position:absolute;right:-16px;top:-16px;width:100px;height:100px;background:rgba(210,187,255,0.06);border-radius:50%;filter:blur(20px);"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
+            <span class="material-symbols-outlined" style="font-size:22px;color:#d2bbff;padding:8px;background:rgba(210,187,255,0.12);border-radius:10px;">handshake</span>
+          </div>
+          <p style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#e2bfb2;margin-bottom:0.375rem;">Negócios Abertos</p>
+          <h3 id="stat-total-deals" style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-0.03em;line-height:1;">0</h3>
         </div>
-    </aside>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col min-w-0 z-10">
-        <!-- Top Navbar -->
-        <header class="h-16 border-b border-glass-border bg-glass/20 backdrop-blur-md px-8 flex items-center justify-between">
-            <h2 id="page-title" class="font-outfit font-semibold text-xl text-white">Dashboard Geral</h2>
-            <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-glass-border bg-glass/60">
-                    <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
-                    <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Agente Lara Online</span>
-                </div>
-            </div>
-        </header>
-
-        <!-- Inner Scroll Container -->
-        <div id="content-container" class="flex-1 p-8 overflow-y-auto max-h-[calc(100vh-4rem)]">
-            
-            <!-- SECTION 1: OVERVIEW TAB (DEFAULT) -->
-            <section id="tab-overview" class="space-y-8 tab-section">
-                <!-- Summary Cards Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div class="p-6 rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md hover:border-brand-500/30 transition duration-300 flex items-center gap-5">
-                        <div class="p-4 rounded-xl bg-brand-500/10 text-brand-500">
-                            <i data-lucide="users-2" class="w-6 h-6"></i>
-                        </div>
-                        <div>
-                            <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total de Leads</span>
-                            <h3 id="stat-total-contacts" class="font-outfit font-bold text-2xl text-white mt-1">0</h3>
-                        </div>
-                    </div>
-                    <div class="p-6 rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md hover:border-blue-500/30 transition duration-300 flex items-center gap-5">
-                        <div class="p-4 rounded-xl bg-blue-500/10 text-blue-500">
-                            <i data-lucide="circle-dot" class="w-6 h-6"></i>
-                        </div>
-                        <div>
-                            <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Negócios Abertos</span>
-                            <h3 id="stat-total-deals" class="font-outfit font-bold text-2xl text-white mt-1">0</h3>
-                        </div>
-                    </div>
-                    <div class="p-6 rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md hover:border-emerald-500/30 transition duration-300 flex items-center gap-5">
-                        <div class="p-4 rounded-xl bg-emerald-500/10 text-emerald-500">
-                            <i data-lucide="calendar-check" class="w-6 h-6"></i>
-                        </div>
-                        <div>
-                            <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Agendamentos</span>
-                            <h3 id="stat-total-appointments" class="font-outfit font-bold text-2xl text-white mt-1">0</h3>
-                        </div>
-                    </div>
-                    <div class="p-6 rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md hover:border-violet-500/30 transition duration-300 flex items-center gap-5">
-                        <div class="p-4 rounded-xl bg-violet-500/10 text-violet-500">
-                            <i data-lucide="sparkles" class="w-6 h-6"></i>
-                        </div>
-                        <div>
-                            <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Prontos p/ Humano</span>
-                            <h3 id="stat-ready-for-handoff" class="font-outfit font-bold text-2xl text-white mt-1">0</h3>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Graphs and Funnel Analytics Grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-2 p-6 rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md flex flex-col justify-between">
-                        <div>
-                            <h4 class="font-outfit font-bold text-lg text-white mb-2">Funil de Atendimento</h4>
-                            <p class="text-xs text-slate-400 mb-6">Leads em cada etapa de qualificação no banco de dados.</p>
-                        </div>
-                        <div class="h-64 relative flex items-center justify-center">
-                            <canvas id="funnelChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="p-6 rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md flex flex-col">
-                        <h4 class="font-outfit font-bold text-lg text-white mb-2">Conversão do Robô</h4>
-                        <p class="text-xs text-slate-400 mb-6">Proporção de leads prontos para envio ao comercial.</p>
-                        <div class="h-64 relative flex items-center justify-center">
-                            <canvas id="conversionChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION 2: KANBAN TAB -->
-            <section id="tab-kanban" class="hidden tab-section">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-start h-full">
-                    <!-- Column 1: NOVO -->
-                    <div class="flex flex-col bg-[#0f1422] rounded-2xl border border-glass-border p-4 h-[75vh]">
-                        <div class="flex items-center justify-between mb-4 pb-2 border-b border-glass-border">
-                            <span class="text-sm font-bold text-white tracking-wide">Novo Lead</span>
-                            <span id="count-kanban-novo" class="px-2 py-0.5 rounded bg-brand-500/10 text-brand-500 font-bold text-xs">0</span>
-                        </div>
-                        <div id="kanban-stage-novo" class="space-y-4 overflow-y-auto flex-1 pb-4"></div>
-                    </div>
-                    <!-- Column 2: EM_QUALIFICACAO -->
-                    <div class="flex flex-col bg-[#0f1422] rounded-2xl border border-glass-border p-4 h-[75vh]">
-                        <div class="flex items-center justify-between mb-4 pb-2 border-b border-glass-border">
-                            <span class="text-sm font-bold text-blue-400 tracking-wide">Em Qualificação</span>
-                            <span id="count-kanban-em_qualificacao" class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-bold text-xs">0</span>
-                        </div>
-                        <div id="kanban-stage-em_qualificacao" class="space-y-4 overflow-y-auto flex-1 pb-4"></div>
-                    </div>
-                    <!-- Column 3: ALINHAMENTO -->
-                    <div class="flex flex-col bg-[#0f1422] rounded-2xl border border-glass-border p-4 h-[75vh]">
-                        <div class="flex items-center justify-between mb-4 pb-2 border-b border-glass-border">
-                            <span class="text-sm font-bold text-amber-400 tracking-wide">Alinhamento</span>
-                            <span id="count-kanban-alinhamento" class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-bold text-xs">0</span>
-                        </div>
-                        <div id="kanban-stage-alinhamento" class="space-y-4 overflow-y-auto flex-1 pb-4"></div>
-                    </div>
-                    <!-- Column 4: PRONTO_PARA_HUMANO -->
-                    <div class="flex flex-col bg-[#0f1422] rounded-2xl border border-glass-border p-4 h-[75vh]">
-                        <div class="flex items-center justify-between mb-4 pb-2 border-b border-glass-border">
-                            <span class="text-sm font-bold text-emerald-400 tracking-wide">Pronto p/ Humano</span>
-                            <span id="count-kanban-pronto_para_humano" class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold text-xs">0</span>
-                        </div>
-                        <div id="kanban-stage-pronto_para_humano" class="space-y-4 overflow-y-auto flex-1 pb-4"></div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION 3: LEADS LIST & CHAT TAB -->
-            <section id="tab-leads" class="hidden tab-section flex flex-col gap-6">
-                <!-- Top: Table of Leads -->
-                <div class="rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md p-6 flex flex-col h-[340px] min-w-0">
-                    <div class="flex items-center justify-between mb-4">
-                        <h4 class="font-outfit font-bold text-lg text-white">Listagem de Contatos</h4>
-                        <div class="relative w-64">
-                            <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
-                            <input type="text" id="lead-search-input" onkeyup="filterLeadsTable()" placeholder="Buscar contato..." class="w-full bg-slate-900/60 border border-glass-border rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30">
-                        </div>
-                    </div>
-                    <div class="flex-1 overflow-y-auto rounded-xl border border-glass-border">
-                        <table class="w-full text-left border-collapse text-sm">
-                            <thead>
-                                <tr class="bg-[#13192c] border-b border-glass-border font-bold text-slate-200">
-                                    <th class="p-4">Lead</th>
-                                    <th class="p-4">WhatsApp</th>
-                                    <th class="p-4">Estágio</th>
-                                    <th class="p-4">Criação</th>
-                                    <th class="p-4 text-right">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="leads-table-body" class="divide-y divide-glass-border/30"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Bottom: Chat Mockup Audit Box -->
-                <div id="chat-mockup-container" class="rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md flex flex-col h-[380px]">
-                    <!-- Chat Header -->
-                    <div class="p-4 border-b border-glass-border bg-glass/20 flex items-center justify-between rounded-t-2xl">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-brand-500/20 text-brand-500 flex items-center justify-center font-bold text-sm">
-                                <i data-lucide="user" class="w-5 h-5"></i>
-                            </div>
-                            <div>
-                                <h5 id="chat-active-name" class="font-outfit font-semibold text-white text-sm">Selecione um Lead</h5>
-                                <p id="chat-active-phone" class="text-xs text-slate-400">Clique em "Ver Conversa"</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Chat Messages Screen -->
-                    <div id="chat-messages-container" class="flex-1 p-6 overflow-y-auto space-y-4 bg-slate-950/20 flex flex-col justify-end min-h-0">
-                        <div class="text-center text-slate-500 text-sm my-auto">
-                            <i data-lucide="message-square" class="w-8 h-8 mx-auto mb-2 text-slate-600"></i>
-                            Selecione um lead na tabela acima para visualizar a auditoria de mensagens.
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION 4: APPOINTMENTS TAB -->
-            <section id="tab-agenda" class="hidden tab-section">
-                <div class="rounded-2xl border border-glass-border bg-glass-card backdrop-blur-md p-6">
-                    <h4 class="font-outfit font-bold text-lg text-white mb-6">Próximos Agendamentos de Consultas</h4>
-                    
-                    <div class="overflow-x-auto rounded-xl border border-glass-border">
-                        <table class="w-full text-left border-collapse text-sm">
-                            <thead>
-                                <tr class="bg-[#13192c] border-b border-glass-border font-bold text-slate-200">
-                                    <th class="p-4">Cliente</th>
-                                    <th class="p-4">WhatsApp</th>
-                                    <th class="p-4">Data/Hora</th>
-                                    <th class="p-4">Duração</th>
-                                    <th class="p-4">Tipo</th>
-                                    <th class="p-4">Status</th>
-                                    <th class="p-4">Local</th>
-                                </tr>
-                            </thead>
-                            <tbody id="appointments-table-body" class="divide-y divide-glass-border/30"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
+        <!-- Agendamentos -->
+        <div class="glass-card" style="border-radius:20px;padding:1.5rem;position:relative;overflow:hidden;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(245,158,11,0.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+          <div style="position:absolute;right:-16px;top:-16px;width:100px;height:100px;background:rgba(245,158,11,0.06);border-radius:50%;filter:blur(20px);"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
+            <span class="material-symbols-outlined" style="font-size:22px;color:#f59e0b;padding:8px;background:rgba(245,158,11,0.12);border-radius:10px;">event_upcoming</span>
+          </div>
+          <p style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#e2bfb2;margin-bottom:0.375rem;">Agendamentos</p>
+          <h3 id="stat-total-appointments" style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-0.03em;line-height:1;">0</h3>
         </div>
-    </main>
 
-    <!-- Lucide Icons Script -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Dashboard Logic Script -->
-    <script src="/static/app.js"></script>
+        <!-- Prontos -->
+        <div class="glass-card" style="border-radius:20px;padding:1.5rem;position:relative;overflow:hidden;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(16,185,129,0.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+          <div style="position:absolute;right:-16px;top:-16px;width:100px;height:100px;background:rgba(16,185,129,0.06);border-radius:50%;filter:blur(20px);"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
+            <span class="material-symbols-outlined" style="font-size:22px;color:#10b981;padding:8px;background:rgba(16,185,129,0.12);border-radius:10px;">contact_support</span>
+          </div>
+          <p style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#e2bfb2;margin-bottom:0.375rem;">Prontos p/ Humano</p>
+          <h3 id="stat-ready-for-handoff" style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-0.03em;line-height:1;color:#10b981;">0</h3>
+        </div>
+
+      </div>
+
+      <!-- Charts -->
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.25rem;">
+
+        <!-- Funil -->
+        <div class="glass-card" style="border-radius:20px;padding:1.5rem;display:flex;flex-direction:column;">
+          <div style="margin-bottom:1.25rem;">
+            <h4 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;margin-bottom:0.25rem;">Funil de Atendimento</h4>
+            <p style="font-size:12px;color:#e2bfb2;opacity:0.7;">Leads em cada etapa de qualificação</p>
+          </div>
+          <div style="flex:1;min-height:220px;position:relative;">
+            <canvas id="funnelChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Conversão -->
+        <div class="glass-card" style="border-radius:20px;padding:1.5rem;display:flex;flex-direction:column;">
+          <div style="margin-bottom:1.25rem;">
+            <h4 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;margin-bottom:0.25rem;">Conversão</h4>
+            <p style="font-size:12px;color:#e2bfb2;opacity:0.7;">Proporção prontos para o comercial</p>
+          </div>
+          <div style="flex:1;min-height:220px;position:relative;display:flex;align-items:center;justify-content:center;">
+            <canvas id="conversionChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ──────────────────────────── -->
+    <!-- TAB: KANBAN                  -->
+    <!-- ──────────────────────────── -->
+    <section id="tab-kanban" class="tab-section" style="display:none;">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;align-items:start;min-height:70vh;">
+
+        <!-- NOVO -->
+        <div class="glass-card" style="border-radius:16px;padding:1rem;display:flex;flex-direction:column;max-height:75vh;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid rgba(255,255,255,0.07);">
+            <span style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#d2bbff;">
+              <span style="width:7px;height:7px;border-radius:50%;background:#d2bbff;"></span> Novo Lead
+            </span>
+            <span id="count-kanban-novo" style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(210,187,255,0.15);color:#d2bbff;">0</span>
+          </div>
+          <div id="kanban-stage-novo" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0.75rem;"></div>
+        </div>
+
+        <!-- EM_QUALIFICACAO -->
+        <div class="glass-card" style="border-radius:16px;padding:1rem;display:flex;flex-direction:column;max-height:75vh;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid rgba(255,255,255,0.07);">
+            <span style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#ffb599;">
+              <span style="width:7px;height:7px;border-radius:50%;background:#f66018;"></span> Em Qualificação
+            </span>
+            <span id="count-kanban-em_qualificacao" style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(246,96,24,0.15);color:#ffb599;">0</span>
+          </div>
+          <div id="kanban-stage-em_qualificacao" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0.75rem;"></div>
+        </div>
+
+        <!-- ALINHAMENTO -->
+        <div class="glass-card" style="border-radius:16px;padding:1rem;display:flex;flex-direction:column;max-height:75vh;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid rgba(255,255,255,0.07);">
+            <span style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#f59e0b;">
+              <span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;"></span> Alinhamento
+            </span>
+            <span id="count-kanban-alinhamento" style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(245,158,11,0.15);color:#f59e0b;">0</span>
+          </div>
+          <div id="kanban-stage-alinhamento" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0.75rem;"></div>
+        </div>
+
+        <!-- PRONTO_PARA_HUMANO -->
+        <div class="glass-card" style="border-radius:16px;padding:1rem;display:flex;flex-direction:column;max-height:75vh;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid rgba(255,255,255,0.07);">
+            <span style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#10b981;">
+              <span style="width:7px;height:7px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;"></span> Pronto p/ Humano
+            </span>
+            <span id="count-kanban-pronto_para_humano" style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(16,185,129,0.15);color:#10b981;">0</span>
+          </div>
+          <div id="kanban-stage-pronto_para_humano" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0.75rem;"></div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ──────────────────────────── -->
+    <!-- TAB: LEADS & CHAT            -->
+    <!-- ──────────────────────────── -->
+    <section id="tab-leads" class="tab-section" style="display:none;gap:1.25rem;flex-direction:column;">
+      <!-- Leads Table -->
+      <div class="glass-card" style="border-radius:20px;padding:1.5rem;display:flex;flex-direction:column;height:340px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+          <h4 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;">Listagem de Contatos</h4>
+          <div style="position:relative;">
+            <span class="material-symbols-outlined" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#a98a7e;font-size:17px;">search</span>
+            <input type="text" id="lead-search-input-2" onkeyup="filterLeadsTable()" placeholder="Buscar contato..." style="
+              background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
+              border-radius:99px;padding:0.4rem 0.875rem 0.4rem 2.25rem;
+              color:#e5e2e3;font-family:'Inter',sans-serif;font-size:12px;
+              outline:none;width:200px;
+            "/>
+          </div>
+        </div>
+        <div style="flex:1;overflow-y:auto;border-radius:12px;border:1px solid rgba(255,255,255,0.07);">
+          <table style="width:100%;border-collapse:collapse;text-align:left;">
+            <thead>
+              <tr style="background:rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.07);">
+                <th style="padding:0.75rem 1rem;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Lead</th>
+                <th style="padding:0.75rem 1rem;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">WhatsApp</th>
+                <th style="padding:0.75rem 1rem;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Estágio</th>
+                <th style="padding:0.75rem 1rem;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Criação</th>
+                <th style="padding:0.75rem 1rem;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;text-align:right;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="leads-table-body" style="divide-y:rgba(255,255,255,0.05);"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Chat viewer -->
+      <div id="chat-mockup-container" class="glass-card" style="border-radius:20px;display:flex;flex-direction:column;height:380px;">
+        <div style="padding:1rem 1.25rem;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:0.75rem;background:rgba(255,255,255,0.02);border-radius:20px 20px 0 0;">
+          <div style="width:38px;height:38px;border-radius:50%;background:rgba(255,181,153,0.15);display:flex;align-items:center;justify-content:center;color:#ffb599;">
+            <span class="material-symbols-outlined" style="font-size:20px;">person</span>
+          </div>
+          <div>
+            <h5 id="chat-active-name" style="font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;line-height:1.2;">Selecione um Lead</h5>
+            <p id="chat-active-phone" style="font-size:11px;color:#a98a7e;margin-top:2px;">Clique em "Ver Conversa"</p>
+          </div>
+        </div>
+        <div id="chat-messages-container" style="flex:1;padding:1.25rem;overflow-y:auto;background:rgba(7,7,8,0.3);display:flex;flex-direction:column;justify-content:flex-end;gap:0.75rem;border-radius:0 0 20px 20px;">
+          <div style="text-align:center;color:#a98a7e;font-size:13px;margin:auto;">
+            <span class="material-symbols-outlined" style="font-size:32px;display:block;margin:0 auto 0.5rem;opacity:0.4;">chat</span>
+            Selecione um lead na tabela acima para visualizar a auditoria de mensagens.
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ──────────────────────────── -->
+    <!-- TAB: AGENDA                  -->
+    <!-- ──────────────────────────── -->
+    <section id="tab-agenda" class="tab-section" style="display:none;">
+      <div class="glass-card" style="border-radius:20px;padding:1.5rem;">
+        <h4 style="font-family:'Outfit',sans-serif;font-size:1rem;font-weight:700;margin-bottom:1.25rem;">Próximos Agendamentos</h4>
+        <div style="overflow-x:auto;border-radius:12px;border:1px solid rgba(255,255,255,0.07);">
+          <table style="width:100%;border-collapse:collapse;text-align:left;">
+            <thead>
+              <tr style="background:rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.07);">
+                <th style="padding:0.75rem 1rem;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Cliente</th>
+                <th style="padding:0.75rem 1rem;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">WhatsApp</th>
+                <th style="padding:0.75rem 1rem;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Data/Hora</th>
+                <th style="padding:0.75rem 1rem;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Duração</th>
+                <th style="padding:0.75rem 1rem;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Tipo</th>
+                <th style="padding:0.75rem 1rem;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Status</th>
+                <th style="padding:0.75rem 1rem;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Local</th>
+              </tr>
+            </thead>
+            <tbody id="appointments-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+
+  </div><!-- /content-container -->
+</main>
+
+
+<script src="/static/app.js"></script>
+<script>
+  // Override switchTab to use the Obsidian design system nav styles
+  function switchTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-section').forEach(el => el.style.display = 'none');
+    // Show active tab
+    const activeTab = document.getElementById(`tab-${tabName}`);
+    if (activeTab) {
+      activeTab.style.display = tabName === 'leads' ? 'flex' : 'block';
+      activeTab.style.flexDirection = tabName === 'leads' ? 'column' : '';
+    }
+
+    // Reset all nav buttons
+    ['overview', 'kanban', 'leads', 'agenda'].forEach(name => {
+      const btn = document.getElementById(`btn-${name}`);
+      if (btn) {
+        btn.style.background = 'transparent';
+        btn.style.color = '#e2bfb2';
+        btn.style.opacity = '0.7';
+        btn.style.borderRight = '2px solid transparent';
+        btn.classList.remove('active-nav');
+      }
+    });
+
+    // Activate current button
+    const activeBtn = document.getElementById(`btn-${tabName}`);
+    if (activeBtn) {
+      activeBtn.style.background = 'rgba(255,181,153,0.1)';
+      activeBtn.style.color = '#ffb599';
+      activeBtn.style.opacity = '1';
+      activeBtn.style.borderRight = '2px solid #ffb599';
+      activeBtn.classList.add('active-nav');
+    }
+
+    // Update topbar title
+    const titles = {
+      overview: 'Dashboard Geral',
+      kanban: 'Quadro Kanban',
+      leads: 'Clientes & Auditoria de Chats',
+      agenda: 'Agenda de Agendamentos'
+    };
+    const titleEl = document.getElementById('page-title');
+    if (titleEl) titleEl.innerText = titles[tabName];
+
+    // Show search only on leads tab
+    const searchBar = document.getElementById('search-bar');
+    if (searchBar) searchBar.style.display = tabName === 'leads' ? 'block' : 'none';
+  }
+
+  // Initialize on load
+  document.addEventListener('DOMContentLoaded', () => {
+    switchTab('overview');
+  });
+
+  // Override renderKanban cards to match Obsidian design
+  const _origRenderKanban = window.renderKanban;
+  if (typeof renderKanban === 'function') {
+    window.renderKanban = function(leads) {
+      const columns = {
+        NOVO: document.getElementById('kanban-stage-novo'),
+        EM_QUALIFICACAO: document.getElementById('kanban-stage-em_qualificacao'),
+        ALINHAMENTO: document.getElementById('kanban-stage-alinhamento'),
+        PRONTO_PARA_HUMANO: document.getElementById('kanban-stage-pronto_para_humano')
+      };
+      Object.keys(columns).forEach(key => {
+        if (columns[key]) columns[key].innerHTML = '';
+        const counter = document.getElementById(`count-kanban-${key.toLowerCase()}`);
+        if (counter) counter.innerText = '0';
+      });
+      leads.forEach(lead => {
+        const deal = lead.deal;
+        if (!deal) return;
+        const stage = deal.etapa_funil;
+        if (!columns[stage]) return;
+        const counter = document.getElementById(`count-kanban-${stage.toLowerCase()}`);
+        if (counter) counter.innerText = parseInt(counter.innerText) + 1;
+        const card = document.createElement('div');
+        card.className = 'glass-card';
+        card.style.cssText = 'border-radius:12px;padding:14px;cursor:pointer;transition:border-color 0.2s;';
+        card.onmouseover = () => card.style.borderColor = 'rgba(255,181,153,0.3)';
+        card.onmouseout = () => card.style.borderColor = 'rgba(255,255,255,0.08)';
+        card.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <h4 style="font-size:13px;font-weight:600;line-height:1.3;">${lead.contact.nome || 'Cliente'}</h4>
+            <span class="material-symbols-outlined" style="font-size:16px;color:#a98a7e;cursor:pointer;">more_horiz</span>
+          </div>
+          <p style="font-size:12px;color:#a98a7e;margin-bottom:8px;">${lead.contact.whatsapp_id}</p>
+          ${deal.tipo_evento ? `<div style="background:rgba(255,181,153,0.08);border:1px solid rgba(255,181,153,0.15);border-radius:8px;padding:8px;margin-bottom:8px;"><p style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#ffb599;margin-bottom:4px;">Intenção IA</p><p style="font-size:12px;color:#e5e2e3;">${deal.tipo_evento}</p></div>` : ''}
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06);">
+            <span style="font-size:10px;color:#a98a7e;">Atualizado: ${formatDate(deal.atualizado_em)}</span>
+            <select onchange="changeLeadStage(${lead.contact.id}, this.value)" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:3px 6px;font-size:10px;color:#e5e2e3;outline:none;cursor:pointer;">
+              <option value="NOVO" ${stage==='NOVO'?'selected':''}>Novo</option>
+              <option value="EM_QUALIFICACAO" ${stage==='EM_QUALIFICACAO'?'selected':''}>Qualificando</option>
+              <option value="ALINHAMENTO" ${stage==='ALINHAMENTO'?'selected':''}>Alinhamento</option>
+              <option value="PRONTO_PARA_HUMANO" ${stage==='PRONTO_PARA_HUMANO'?'selected':''}>Comercial</option>
+            </select>
+          </div>
+        `;
+        columns[stage].appendChild(card);
+      });
+    };
+  }
+</script>
+
 </body>
 </html>

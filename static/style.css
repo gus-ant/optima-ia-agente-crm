@@ -1,51 +1,135 @@
-/* Custom CRM Dashboard styling overrides */
+/* ────────────────────────────────────────────────────
+   Óptima IA — Optima Obsidian Design System
+   Shared utility styles for master.html & index.html
+──────────────────────────────────────────────────── */
+
+/* CSS Variables (token layer) */
+:root {
+  --bg-base:           #070708;
+  --surface:           #131314;
+  --surface-low:       #1c1b1d;
+  --surface-container: #201f21;
+  --surface-high:      #2a2a2b;
+  --surface-highest:   #353436;
+
+  --primary:           #ffb599;
+  --primary-cta:       #f66018;
+  --on-primary:        #5a1c00;
+
+  --secondary:         #d2bbff;
+  --tertiary:          #ffb1c7;
+  --tertiary-cta:      #ff4993;
+
+  --on-surface:        #e5e2e3;
+  --on-variant:        #e2bfb2;
+  --outline:           #a98a7e;
+  --outline-dim:       #5a4138;
+
+  --success:           #10b981;
+  --warning:           #f59e0b;
+  --error:             #ef4444;
+
+  --glass-bg:          rgba(255, 255, 255, 0.03);
+  --glass-border:      rgba(255, 255, 255, 0.08);
+  --glass-border-top:  rgba(255, 255, 255, 0.12);
+
+  --gradient-brand:    linear-gradient(135deg, #f66018 0%, #ff4993 100%);
+  --glow-orange:       0 0 24px rgba(246, 96, 24, 0.35);
+
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-2xl:  24px;
+  --radius-full: 9999px;
+
+  --font-display: 'Outfit', sans-serif;
+  --font-body:    'Inter', sans-serif;
+}
+
+/* Global reset */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
 
 body {
-    font-family: 'Inter', sans-serif;
+  background-color: var(--bg-base);
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6 {
-    font-family: 'Outfit', sans-serif;
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 181, 153, 0.2); border-radius: var(--radius-full); }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 181, 153, 0.4); }
+
+/* Glass layers */
+.glass-card {
+  backdrop-filter: blur(12px);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-top-color: var(--glass-border-top);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-/* Glassmorphism custom scrollbars */
-::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+.glass-panel {
+  backdrop-filter: blur(24px);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
 }
 
-::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.01);
-    border-radius: 8px;
+.glass-modal {
+  backdrop-filter: blur(32px);
+  background: rgba(20, 18, 20, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8);
 }
 
-::-webkit-scrollbar-thumb {
-    background: rgba(244, 63, 94, 0.2);
-    border-radius: 8px;
+/* Gradient helpers */
+.gradient-text {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gradient-bg { background: var(--gradient-brand); }
+
+/* Glow */
+.primary-glow { box-shadow: var(--glow-orange); }
+
+/* Typography scale */
+.display-lg { font-family: var(--font-display); font-size: 3rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+.headline-md { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+.headline-sm { font-family: var(--font-display); font-size: 1.125rem; font-weight: 700; }
+.label-caps { font-family: var(--font-body); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+.label-bold { font-family: var(--font-body); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; }
+.body-sm { font-family: var(--font-body); font-size: 13px; font-weight: 400; }
+
+/* Status badge variants */
+.badge {
+  display: inline-flex; align-items: center; padding: 3px 10px;
+  border-radius: var(--radius-full); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.badge-success { background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.25); }
+.badge-warning { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
+.badge-error   { background: rgba(239,68,68,0.12);  color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+.badge-primary { background: rgba(255,181,153,0.12); color: #ffb599; border: 1px solid rgba(255,181,153,0.25); }
+.badge-secondary { background: rgba(210,187,255,0.12); color: #d2bbff; border: 1px solid rgba(210,187,255,0.25); }
+
+/* Input focus glow */
+input:focus, select:focus, textarea:focus {
+  border-color: rgba(246, 96, 24, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(246, 96, 24, 0.12) !important;
+  outline: none !important;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: rgba(244, 63, 94, 0.4);
-}
-
-/* Custom transitions and properties */
-.tab-section {
-    animation: fadeIn 0.3s ease-out-in forwards;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(6px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Custom style for active list hover items */
-select option {
-    background-color: #0b0f19;
-    color: #e2e8f0;
-}
+/* Animations */
+@keyframes fadeIn  { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes spin    { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes pulse   { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
