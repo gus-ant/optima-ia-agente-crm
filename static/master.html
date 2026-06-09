@@ -8,6 +8,7 @@
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 tailwind.config = {
   darkMode: "class",
@@ -216,24 +217,23 @@ tailwind.config = {
       <p style="font-size:11px;letter-spacing:0.1em;font-weight:600;color:#e2bfb2;opacity:0.7;text-transform:uppercase;margin-top:0.4rem;">CRM Intelligence</p>
     </div>
 
-    <!-- Nav -->
     <nav style="flex:1;">
-      <a href="#" class="sidebar-item-active" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;">
+      <a href="#" id="tab-link-overview" onclick="switchTab('overview', event)" class="sidebar-item-active" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;">
         <span class="material-symbols-outlined" style="font-size:20px;">dashboard</span> Visão Geral
       </a>
-      <a href="#" class="sidebar-item" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;border-right:2px solid transparent;">
+      <a href="#" id="tab-link-tenants" onclick="switchTab('tenants', event)" class="sidebar-item" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;border-right:2px solid transparent;">
         <span class="material-symbols-outlined" style="font-size:20px;">corporate_fare</span> Tenants
       </a>
-      <a href="#" class="sidebar-item" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;border-right:2px solid transparent;">
+      <a href="#" id="tab-link-agents" onclick="switchTab('agents', event)" class="sidebar-item" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;border-right:2px solid transparent;">
         <span class="material-symbols-outlined" style="font-size:20px;">smart_toy</span> Agentes IA
       </a>
-      <a href="#" class="sidebar-item" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;border-right:2px solid transparent;">
+      <a href="#" id="tab-link-metrics" onclick="switchTab('metrics', event)" class="sidebar-item" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;border-right:2px solid transparent;">
         <span class="material-symbols-outlined" style="font-size:20px;">analytics</span> Métricas
       </a>
-      <a href="#" class="sidebar-item" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;border-right:2px solid transparent;">
+      <a href="#" id="tab-link-integrations" onclick="switchTab('integrations', event)" class="sidebar-item" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;border-right:2px solid transparent;">
         <span class="material-symbols-outlined" style="font-size:20px;">hub</span> Integrações
       </a>
-      <a href="#" class="sidebar-item" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;border-right:2px solid transparent;">
+      <a href="#" id="tab-link-settings" onclick="switchTab('settings', event)" class="sidebar-item" style="display:flex;align-items:center;gap:12px;padding:0.8rem 1.5rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.05em;text-decoration:none;text-transform:uppercase;border-right:2px solid transparent;">
         <span class="material-symbols-outlined" style="font-size:20px;">settings</span> Configurações
       </a>
     </nav>
@@ -307,142 +307,392 @@ tailwind.config = {
     <!-- ── PAGE CONTENT ── -->
     <main style="flex:1;padding:2rem;overflow-y:auto;">
 
-      <!-- Stats Bento Grid -->
-      <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.25rem;margin-bottom:2rem;">
-
-        <!-- Total Tenants -->
-        <div class="glass-card" style="border-radius:16px;padding:1.5rem;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(255,181,153,0.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
-            <div style="background:rgba(255,181,153,0.12);padding:8px;border-radius:10px;color:#ffb599;">
-              <span class="material-symbols-outlined" style="font-size:22px;">corporate_fare</span>
+      <!-- ── SEÇÃO 1: VISÃO GERAL (OVERVIEW) ── -->
+      <section id="sec-overview" class="tab-section">
+        <!-- Bento Grid de KPIs -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.25rem;margin-bottom:2rem;">
+          <!-- Total Tenants -->
+          <div class="glass-card" style="border-radius:16px;padding:1.5rem;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(255,181,153,0.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+              <div style="background:rgba(255,181,153,0.12);padding:8px;border-radius:10px;color:#ffb599;">
+                <span class="material-symbols-outlined" style="font-size:22px;">corporate_fare</span>
+              </div>
             </div>
+            <p style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#e2bfb2;margin-bottom:0.375rem;">Total de Tenants</p>
+            <h2 id="stat-total" style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-0.03em;line-height:1;">—</h2>
           </div>
-          <p style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#e2bfb2;margin-bottom:0.375rem;">Total de Tenants</p>
-          <h2 id="stat-total" style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-0.03em;line-height:1;">—</h2>
-          <div style="margin-top:1rem;height:3px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;">
-            <div style="height:100%;width:75%;background:linear-gradient(90deg,#f66018,#ffb599);border-radius:99px;"></div>
+          <!-- Active Tenants -->
+          <div class="glass-card" style="border-radius:16px;padding:1.5rem;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(16,185,129,0.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+              <div style="background:rgba(16,185,129,0.12);padding:8px;border-radius:10px;color:#10b981;">
+                <span class="material-symbols-outlined" style="font-size:22px;">check_circle</span>
+              </div>
+              <span style="font-size:11px;font-weight:700;color:#10b981;letter-spacing:0.04em;">Ativos</span>
+            </div>
+            <p style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#e2bfb2;margin-bottom:0.375rem;">Tenants Ativos</p>
+            <h2 id="stat-active" style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-0.03em;line-height:1;color:#10b981;">—</h2>
+          </div>
+          <!-- Total Leads -->
+          <div class="glass-card" style="border-radius:16px;padding:1.5rem;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(210,187,255,0.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+              <div style="background:rgba(210,187,255,0.12);padding:8px;border-radius:10px;color:#d2bbff;">
+                <span class="material-symbols-outlined" style="font-size:22px;">groups</span>
+              </div>
+            </div>
+            <p style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#e2bfb2;margin-bottom:0.375rem;">Leads Qualificados</p>
+            <h2 id="stat-leads" style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-0.03em;line-height:1;color:#d2bbff;">—</h2>
+          </div>
+          <!-- Total Messages -->
+          <div class="glass-card" style="border-radius:16px;padding:1.5rem;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(255,73,147,0.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+              <div style="background:rgba(255,73,147,0.12);padding:8px;border-radius:10px;color:#ff4993;">
+                <span class="material-symbols-outlined" style="font-size:22px;">chat_bubble</span>
+              </div>
+            </div>
+            <p style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#e2bfb2;margin-bottom:0.375rem;">Mensagens Processadas</p>
+            <h2 id="stat-messages" style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-0.03em;line-height:1;color:#ff4993;">—</h2>
           </div>
         </div>
 
-        <!-- Active Tenants -->
-        <div class="glass-card" style="border-radius:16px;padding:1.5rem;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(16,185,129,0.25)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
-            <div style="background:rgba(16,185,129,0.12);padding:8px;border-radius:10px;color:#10b981;">
-              <span class="material-symbols-outlined" style="font-size:22px;">check_circle</span>
+        <!-- Grid de Gráficos -->
+        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:1.5rem;margin-bottom:2rem;" class="grid-cols-1 lg:grid-cols-2">
+          <!-- Gráfico de Linha: Atividade -->
+          <div class="glass-card" style="border-radius:16px;padding:1.5rem;">
+            <h3 style="font-family:'Outfit',sans-serif;font-size:1.125rem;font-weight:700;margin-bottom:1rem;">Atividade Global de Conversas</h3>
+            <div style="height:280px; position:relative;">
+              <canvas id="chart-global-activity"></canvas>
             </div>
-            <span style="font-size:11px;font-weight:700;color:#10b981;letter-spacing:0.04em;">Ativos</span>
           </div>
-          <p style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#e2bfb2;margin-bottom:0.375rem;">Tenants Ativos</p>
-          <h2 id="stat-active" style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-0.03em;line-height:1;color:#10b981;">—</h2>
+          <!-- Gráfico Donut: Planos -->
+          <div class="glass-card" style="border-radius:16px;padding:1.5rem;">
+            <h3 style="font-family:'Outfit',sans-serif;font-size:1.125rem;font-weight:700;margin-bottom:1rem;">Distribuição de Planos</h3>
+            <div style="height:280px; position:relative; display:flex; justify-content:center; align-items:center;">
+              <canvas id="chart-plan-distribution" style="max-height:240px; max-width:240px;"></canvas>
+            </div>
+          </div>
         </div>
-
       </section>
 
-
-      <!-- Tenant Table -->
-      <section class="glass-card" style="border-radius:16px;overflow:hidden;margin-bottom:2rem;">
-
-        <!-- Table Header -->
-        <div style="padding:1.5rem;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
-          <div>
-            <h3 style="font-family:'Outfit',sans-serif;font-size:1.125rem;font-weight:700;margin-bottom:0.2rem;">Gerenciamento de Tenants</h3>
-            <p style="font-size:13px;color:#e2bfb2;opacity:0.8;">Listagem completa de instâncias corporativas do CRM.</p>
-          </div>
-          <div style="display:flex;gap:0.75rem;align-items:center;">
-            <div style="position:relative;">
-              <span class="material-symbols-outlined" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#a98a7e;font-size:18px;">search</span>
-              <input
-                type="text"
-                id="tenant-search"
-                placeholder="Buscar empresa..."
-                oninput="filterTenants()"
-                style="
-                  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
-                  border-radius:10px;padding:0.6rem 1rem 0.6rem 2.75rem;
-                  color:#e5e2e3;font-family:'Inter',sans-serif;font-size:13px;
-                  outline:none;width:220px;transition:border-color 0.2s,box-shadow 0.2s;
-                "
-                onfocus="this.style.borderColor='rgba(246,96,24,0.5)';this.style.boxShadow='0 0 0 2px rgba(246,96,24,0.12)'"
-                onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.boxShadow='none'"
-              />
+      <!-- ── SEÇÃO 2: TENANTS ── -->
+      <section id="sec-tenants" class="tab-section hidden" style="display:none;">
+        <div class="glass-card" style="border-radius:16px;overflow:hidden;margin-bottom:2rem;">
+          <!-- Table Header -->
+          <div style="padding:1.5rem;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+            <div>
+              <h3 style="font-family:'Outfit',sans-serif;font-size:1.125rem;font-weight:700;margin-bottom:0.2rem;">Gerenciamento de Tenants</h3>
+              <p style="font-size:13px;color:#e2bfb2;opacity:0.8;">Listagem completa de instâncias corporativas do CRM.</p>
             </div>
-            <button onclick="openCreateModal()" class="gradient-bg" style="
-              display:flex;align-items:center;gap:6px;
-              padding:0.6rem 1rem;border-radius:10px;border:none;
-              color:#4f1700;font-family:'Inter',sans-serif;font-weight:700;
-              font-size:12px;letter-spacing:0.04em;cursor:pointer;
-              transition:opacity 0.2s,transform 0.15s;
-            " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
-              <span class="material-symbols-outlined" style="font-size:16px;">add</span>
-              Novo Tenant
-            </button>
+            <div style="display:flex;gap:0.75rem;align-items:center;">
+              <div style="position:relative;">
+                <span class="material-symbols-outlined" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#a98a7e;font-size:18px;">search</span>
+                <input
+                  type="text"
+                  id="tenant-search"
+                  placeholder="Buscar empresa..."
+                  oninput="filterTenants()"
+                  style="
+                    background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
+                    border-radius:10px;padding:0.6rem 1rem 0.6rem 2.75rem;
+                    color:#e5e2e3;font-family:'Inter',sans-serif;font-size:13px;
+                    outline:none;width:220px;transition:border-color 0.2s,box-shadow 0.2s;
+                  "
+                  onfocus="this.style.borderColor='rgba(246,96,24,0.5)';this.style.boxShadow='0 0 0 2px rgba(246,96,24,0.12)'"
+                  onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.boxShadow='none'"
+                />
+              </div>
+              <button onclick="openCreateModal()" class="gradient-bg" style="
+                display:flex;align-items:center;gap:6px;
+                padding:0.6rem 1rem;border-radius:10px;border:none;
+                color:#4f1700;font-family:'Inter',sans-serif;font-weight:700;
+                font-size:12px;letter-spacing:0.04em;cursor:pointer;
+                transition:opacity 0.2s,transform 0.15s;
+              " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+                <span class="material-symbols-outlined" style="font-size:16px;">add</span>
+                Novo Tenant
+              </button>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr style="background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.07);">
+                  <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;white-space:nowrap;">ID</th>
+                  <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Empresa</th>
+                  <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Slug</th>
+                  <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Plano</th>
+                  <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Status</th>
+                  <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Criado em</th>
+                  <th style="padding:0.875rem 1.5rem;text-align:right;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tenants-body">
+                <tr>
+                  <td colspan="7" style="padding:3rem;text-align:center;color:#a98a7e;">
+                    <span class="material-symbols-outlined" style="font-size:32px;display:block;margin-bottom:0.75rem;animation:spin 1s linear infinite;">progress_activity</span>
+                    <p style="font-size:13px;">Carregando tenants…</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <!-- Table -->
-        <div style="overflow-x:auto;">
-          <table style="width:100%;border-collapse:collapse;">
-            <thead>
-              <tr style="background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.07);">
-                <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;white-space:nowrap;">ID</th>
-                <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Empresa</th>
-                <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Slug</th>
-                <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Plano</th>
-                <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Status</th>
-                <th style="padding:0.875rem 1.5rem;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Criado em</th>
-                <th style="padding:0.875rem 1.5rem;text-align:right;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#a98a7e;">Ações</th>
-              </tr>
-            </thead>
-            <tbody id="tenants-body">
-              <tr>
-                <td colspan="7" style="padding:3rem;text-align:center;color:#a98a7e;">
-                  <span class="material-symbols-outlined" style="font-size:32px;display:block;margin-bottom:0.75rem;animation:spin 1s linear infinite;">progress_activity</span>
-                  <p style="font-size:13px;">Carregando tenants…</p>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- CTA Card -->
+        <div class="glass-panel" style="border-radius:24px;padding:2.5rem;display:flex;align-items:center;justify-content:space-between;gap:2rem;overflow:hidden;position:relative;">
+          <div style="position:absolute;right:-80px;top:-80px;width:300px;height:300px;background:rgba(246,96,24,0.12);border-radius:50%;filter:blur(80px);pointer-events:none;"></div>
+          <div style="position:absolute;left:-60px;bottom:-60px;width:240px;height:240px;background:rgba(96,1,209,0.08);border-radius:50%;filter:blur(80px);pointer-events:none;"></div>
+          <div style="relative;z-index:1;max-width:600px;">
+            <h2 style="font-family:'Outfit',sans-serif;font-size:1.5rem;font-weight:700;margin-bottom:0.5rem;">Expanda sua Rede IA</h2>
+            <p style="font-size:0.9375rem;color:#e2bfb2;line-height:1.6;">Pronto para provisionar um novo ambiente? O processo de configuração de Tenant leva menos de 2 minutos com nossa infraestrutura escalável.</p>
+            <div style="display:flex;gap:1rem;margin-top:1.5rem;flex-wrap:wrap;">
+              <button onclick="openCreateModal()" class="gradient-bg primary-glow" style="
+                display:flex;align-items:center;gap:8px;
+                padding:0.85rem 1.75rem;border-radius:12px;border:none;
+                color:#4f1700;font-family:'Outfit',sans-serif;font-weight:700;
+                font-size:14px;cursor:pointer;transition:transform 0.15s,opacity 0.2s;
+              " onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+                <span class="material-symbols-outlined" style="font-size:20px;">rocket_launch</span>
+                Provisionar Novo Tenant
+              </button>
+            </div>
+          </div>
         </div>
-
       </section>
 
+      <!-- ── SEÇÃO 3: AGENTES IA ── -->
+      <section id="sec-agents" class="tab-section hidden" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:1.5rem;align-items:start;" class="grid-cols-1 lg:grid-cols-2">
+          
+          <!-- Lista de Agentes -->
+          <div class="glass-card" style="border-radius:16px;padding:1.5rem;">
+            <h3 style="font-family:'Outfit',sans-serif;font-size:1.125rem;font-weight:700;margin-bottom:1rem;">Configurações Ativas dos Agentes</h3>
+            <div style="overflow-x:auto;">
+              <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.07);text-align:left;">
+                    <th style="padding:0.75rem 0.5rem;font-size:11px;color:#a98a7e;text-transform:uppercase;">Empresa</th>
+                    <th style="padding:0.75rem 0.5rem;font-size:11px;color:#a98a7e;text-transform:uppercase;">Modelo</th>
+                    <th style="padding:0.75rem 0.5rem;font-size:11px;color:#a98a7e;text-transform:uppercase;">Temp</th>
+                    <th style="padding:0.75rem 0.5rem;font-size:11px;color:#a98a7e;text-transform:uppercase;text-align:right;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="agents-table-body">
+                  <tr>
+                    <td colspan="4" style="padding:2rem;text-align:center;color:#a98a7e;">Carregando agentes...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-      <!-- CTA Card -->
-      <div class="glass-panel" style="border-radius:24px;padding:2.5rem;display:flex;align-items:center;justify-content:space-between;gap:2rem;overflow:hidden;position:relative;">
-        <div style="position:absolute;right:-80px;top:-80px;width:300px;height:300px;background:rgba(246,96,24,0.12);border-radius:50%;filter:blur(80px);pointer-events:none;"></div>
-        <div style="position:absolute;left:-60px;bottom:-60px;width:240px;height:240px;background:rgba(96,1,209,0.08);border-radius:50%;filter:blur(80px);pointer-events:none;"></div>
-        <div style="position:relative;z-index:1;max-width:600px;">
-          <h2 style="font-family:'Outfit',sans-serif;font-size:1.5rem;font-weight:700;margin-bottom:0.5rem;">Expanda sua Rede IA</h2>
-          <p style="font-size:0.9375rem;color:#e2bfb2;line-height:1.6;">Pronto para provisionar um novo ambiente? O processo de configuração de Tenant leva menos de 2 minutos com nossa infraestrutura escalável.</p>
-          <div style="display:flex;gap:1rem;margin-top:1.5rem;flex-wrap:wrap;">
-            <button onclick="openCreateModal()" class="gradient-bg primary-glow" style="
-              display:flex;align-items:center;gap:8px;
-              padding:0.85rem 1.75rem;border-radius:12px;border:none;
-              color:#4f1700;font-family:'Outfit',sans-serif;font-weight:700;
-              font-size:14px;cursor:pointer;transition:transform 0.15s,opacity 0.2s;
-            " onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
-              <span class="material-symbols-outlined" style="font-size:20px;">rocket_launch</span>
-              Provisionar Novo Tenant
-            </button>
-            <button style="
-              display:flex;align-items:center;gap:8px;
-              padding:0.85rem 1.75rem;border-radius:12px;
-              border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);
-              color:#e5e2e3;font-family:'Outfit',sans-serif;font-weight:700;
-              font-size:14px;cursor:pointer;transition:background 0.2s;
-            " onmouseover="this.style.background='rgba(255,255,255,0.09)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
-              Ver Logs de Instalação
-            </button>
+          <!-- Sandbox de Chat -->
+          <div class="glass-card" style="border-radius:16px;padding:1.5rem;display:flex;flex-direction:column;height:520px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;border-bottom:1px solid rgba(255,255,255,0.07);padding-bottom:0.75rem;">
+              <div>
+                <h3 style="font-family:'Outfit',sans-serif;font-size:1.125rem;font-weight:700;">Sandbox do Agente</h3>
+                <p style="font-size:12px;color:#e2bfb2;opacity:0.8;">Simule conversas e teste o comportamento do robô Lara</p>
+              </div>
+              <div>
+                <select id="sandbox-tenant-select" style="background:#131314;border:1px solid rgba(255,255,255,0.1);color:#e5e2e3;font-size:12px;padding:0.4rem 0.75rem;border-radius:8px;outline:none;">
+                  <!-- Dinâmico -->
+                </select>
+              </div>
+            </div>
+            
+            <!-- Mensagens -->
+            <div id="sandbox-chat-messages" style="flex:1;overflow-y:auto;padding:1rem;background:rgba(0,0,0,0.15);border-radius:12px;border:1px solid rgba(255,255,255,0.04);margin-bottom:1rem;display:flex;flex-direction:column;gap:0.75rem;">
+              <div style="align-self:center;background:rgba(255,181,153,0.08);color:#ffb599;border:1px solid rgba(255,181,153,0.15);padding:0.5rem 0.75rem;border-radius:8px;font-size:11px;text-align:center;max-width:85%;">
+                Selecione um tenant no menu acima e envie uma mensagem para testar o fluxo de qualificação do robô.
+              </div>
+            </div>
+            
+            <!-- Input -->
+            <div style="display:flex;gap:0.75rem;">
+              <input type="text" id="sandbox-chat-input" placeholder="Digite uma mensagem de teste..." onkeypress="if(event.key==='Enter') sendSandboxMessage()" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:0.75rem 1rem;color:#e5e2e3;font-size:13px;outline:none;"/>
+              <button onclick="sendSandboxMessage()" class="gradient-bg" style="width:42px;height:42px;border-radius:10px;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#4f1700;">
+                <span class="material-symbols-outlined" style="font-size:20px;">send</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ── SEÇÃO 4: METRICAS (ANALYTICS) ── -->
+      <section id="sec-metrics" class="tab-section hidden" style="display:none;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.25rem;margin-bottom:2rem;">
+          <!-- Latência -->
+          <div class="glass-card" style="border-radius:16px;padding:1.5rem;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+              <div style="background:rgba(16,185,129,0.12);padding:8px;border-radius:10px;color:#10b981;">
+                <span class="material-symbols-outlined" style="font-size:22px;">speed</span>
+              </div>
+            </div>
+            <p style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#e2bfb2;margin-bottom:0.375rem;">Latência Média da IA</p>
+            <h2 id="metric-latency" style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;color:#10b981;">1.8s</h2>
+          </div>
+          <!-- Taxa de Qualificação -->
+          <div class="glass-card" style="border-radius:16px;padding:1.5rem;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+              <div style="background:rgba(210,187,255,0.12);padding:8px;border-radius:10px;color:#d2bbff;">
+                <span class="material-symbols-outlined" style="font-size:22px;">insights</span>
+              </div>
+            </div>
+            <p style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#e2bfb2;margin-bottom:0.375rem;">Conversão de Leads</p>
+            <h2 id="metric-conversion" style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;color:#d2bbff;">45%</h2>
+          </div>
+          <!-- Custos -->
+          <div class="glass-card" style="border-radius:16px;padding:1.5rem;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+              <div style="background:rgba(255,181,153,0.12);padding:8px;border-radius:10px;color:#ffb599;">
+                <span class="material-symbols-outlined" style="font-size:22px;">payments</span>
+              </div>
+            </div>
+            <p style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#e2bfb2;margin-bottom:0.375rem;">Custo Estimado (Mês)</p>
+            <h2 id="metric-cost" style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:700;color:#ffb599;">$12.80</h2>
           </div>
         </div>
-        <div style="position:relative;z-index:1;flex-shrink:0;" class="hidden lg:block" style="display:none;">
-          <div style="width:160px;height:160px;border-radius:50%;border:3px dashed rgba(255,181,153,0.2);display:flex;align-items:center;justify-content:center;animation:spin 20s linear infinite;">
-            <div style="width:110px;height:110px;border-radius:50%;border:2px solid rgba(210,187,255,0.2);display:flex;align-items:center;justify-content:center;animation:spin 10s linear infinite reverse;">
-              <span class="material-symbols-outlined" style="font-size:48px;color:#ffb599;animation:pulse 2s ease-in-out infinite;font-variation-settings:'FILL' 1;">hub</span>
+
+        <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:1.5rem;margin-bottom:2rem;" class="grid-cols-1 lg:grid-cols-2">
+          <!-- Ranking de Uso -->
+          <div class="glass-card" style="border-radius:16px;padding:1.5rem;">
+            <h3 style="font-family:'Outfit',sans-serif;font-size:1.125rem;font-weight:700;margin-bottom:1rem;">Volume de Mensagens por Empresa</h3>
+            <div style="height:280px; position:relative;">
+              <canvas id="chart-metrics-usage"></canvas>
+            </div>
+          </div>
+          <!-- Etapas Leads -->
+          <div class="glass-card" style="border-radius:16px;padding:1.5rem;">
+            <h3 style="font-family:'Outfit',sans-serif;font-size:1.125rem;font-weight:700;margin-bottom:1rem;">Distribuição de Leads por Funil</h3>
+            <div style="height:280px; position:relative; display:flex; justify-content:center; align-items:center;">
+              <canvas id="chart-metrics-stages" style="max-height:240px; max-width:240px;"></canvas>
             </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      <!-- ── SEÇÃO 5: INTEGRAÇÕES (HUB) ── -->
+      <section id="sec-integrations" class="tab-section hidden" style="display:none;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); padding:1rem; border-radius:12px; flex-wrap:wrap; gap:1rem;">
+          <div style="display:flex; align-items:center; gap:0.75rem;">
+            <span class="material-symbols-outlined" style="color:#ffb599;">select_all</span>
+            <span style="font-weight:600; font-size:14px;">Selecione o Tenant para Gerenciar Integrações:</span>
+          </div>
+          <select id="integrations-tenant-select" onchange="loadTenantIntegrations()" style="background:#131314; border:1px solid rgba(255,255,255,0.1); color:#e5e2e3; font-size:13px; padding:0.5rem 1.25rem; border-radius:8px; outline:none; width:220px; cursor:pointer;">
+            <!-- Dinâmico -->
+          </select>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1.2fr 1.5fr; gap:1.5rem; align-items:start;" class="grid-cols-1 lg:grid-cols-2">
+          
+          <!-- WhatsApp -->
+          <div class="glass-card" style="border-radius:16px; padding:1.5rem;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:1.25rem;">
+              <span class="material-symbols-outlined" style="color:#10b981; font-size:24px;">chat</span>
+              <h3 style="font-family:'Outfit',sans-serif; font-size:1.125rem; font-weight:700;">WhatsApp (Evolution API)</h3>
+            </div>
+            <form id="whatsapp-integration-form" onsubmit="saveWhatsAppConfig(event)">
+              <div style="margin-bottom:1rem;">
+                <label style="display:block; font-size:11px; color:#e2bfb2; text-transform:uppercase; font-weight:600; margin-bottom:0.375rem;">URL do Servidor Evolution</label>
+                <input type="text" id="int-wa-url" placeholder="ex: https://api.evolution-api.com" style="width:100%; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:0.6rem 0.8rem; color:#e5e2e3; font-size:13px; outline:none;"/>
+              </div>
+              <div style="margin-bottom:1rem;">
+                <label style="display:block; font-size:11px; color:#e2bfb2; text-transform:uppercase; font-weight:600; margin-bottom:0.375rem;">Token da Evolution API</label>
+                <input type="password" id="int-wa-token" placeholder="evolution_api_key_..." style="width:100%; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:0.6rem 0.8rem; color:#e5e2e3; font-size:13px; outline:none;"/>
+              </div>
+              <div style="margin-bottom:1.25rem;">
+                <label style="display:block; font-size:11px; color:#e2bfb2; text-transform:uppercase; font-weight:600; margin-bottom:0.375rem;">Nome da Instância</label>
+                <input type="text" id="int-wa-instance" placeholder="ex: instance-ludecor" style="width:100%; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:0.6rem 0.8rem; color:#e5e2e3; font-size:13px; outline:none;"/>
+              </div>
+              <button type="submit" class="gradient-bg" style="width:100%; padding:0.75rem; border-radius:10px; border:none; color:#4f1700; font-family:'Outfit',sans-serif; font-weight:700; font-size:13px; cursor:pointer;">
+                Salvar Conexão WhatsApp
+              </button>
+            </form>
+          </div>
+
+          <!-- MCP -->
+          <div class="glass-card" style="border-radius:16px; padding:1.5rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="material-symbols-outlined" style="color:#d2bbff; font-size:24px;">hub</span>
+                <h3 style="font-family:'Outfit',sans-serif; font-size:1.125rem; font-weight:700;">Servidores MCP</h3>
+              </div>
+              <button onclick="openMcpModal()" class="gradient-bg" style="display:flex; align-items:center; gap:4px; padding:0.4rem 0.75rem; border-radius:8px; border:none; color:#4f1700; font-family:'Inter',sans-serif; font-weight:700; font-size:11px; cursor:pointer;">
+                <span class="material-symbols-outlined" style="font-size:14px;">add</span> Novo Servidor
+              </button>
+            </div>
+
+            <div style="overflow-x:auto;">
+              <table style="width:100%; border-collapse:collapse;">
+                <thead>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,0.07); text-align:left;">
+                    <th style="padding:0.5rem; font-size:11px; color:#a98a7e; text-transform:uppercase;">Nome</th>
+                    <th style="padding:0.5rem; font-size:11px; color:#a98a7e; text-transform:uppercase;">Comando</th>
+                    <th style="padding:0.5rem; font-size:11px; color:#a98a7e; text-transform:uppercase; text-align:right;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="mcp-servers-body">
+                  <tr>
+                    <td colspan="3" style="padding:2rem;text-align:center;color:#a98a7e;">Selecione um tenant para listar servidores MCP.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ── SEÇÃO 6: CONFIGURAÇÕES (SETTINGS) ── -->
+      <section id="sec-settings" class="tab-section hidden" style="display:none;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; align-items:start;" class="grid-cols-1 lg:grid-cols-2">
+          
+          <!-- Master Key -->
+          <div class="glass-card" style="border-radius:16px; padding:1.5rem;">
+            <h3 style="font-family:'Outfit',sans-serif; font-size:1.125rem; font-weight:700; margin-bottom:1rem;">Segurança: Master Key</h3>
+            <form id="master-key-change-form" onsubmit="changeMasterKey(event)">
+              <div style="margin-bottom:1.25rem;">
+                <label style="display:block; font-size:11px; color:#e2bfb2; text-transform:uppercase; font-weight:600; margin-bottom:0.375rem;">Nova Master Key</label>
+                <input type="password" id="set-new-key" required placeholder="Digite a nova chave mestra" style="width:100%; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:0.6rem 0.8rem; color:#e5e2e3; font-size:13px; outline:none;"/>
+              </div>
+              <button type="submit" class="gradient-bg" style="width:100%; padding:0.75rem; border-radius:10px; border:none; color:#4f1700; font-family:'Outfit',sans-serif; font-weight:700; font-size:13px; cursor:pointer;">
+                Atualizar Chave Mestra
+              </button>
+            </form>
+          </div>
+
+          <!-- Status do Sistema -->
+          <div class="glass-card" style="border-radius:16px; padding:1.5rem;">
+            <h3 style="font-family:'Outfit',sans-serif; font-size:1.125rem; font-weight:700; margin-bottom:1.25rem;">Status dos Serviços</h3>
+            <div style="display:flex; flex-direction:column; gap:1rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:0.5rem;">
+                <span style="font-size:13px; color:#e2bfb2;">Banco de Dados (Supabase)</span>
+                <span style="display:flex; align-items:center; gap:6px; font-size:12px; color:#10b981;">
+                  <span style="width:6px; height:6px; border-radius:50%; background:#10b981; box-shadow:0 0 6px #10b981;"></span>
+                  Online
+                </span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:0.5rem;">
+                <span style="font-size:13px; color:#e2bfb2;">Armazenamento Redis</span>
+                <span style="display:flex; align-items:center; gap:6px; font-size:12px; color:#ffb599;">
+                  <span style="width:6px; height:6px; border-radius:50%; background:#ffb599; box-shadow:0 0 6px #ffb599;"></span>
+                  Em Memória (Local)
+                </span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:0.5rem;">
+                <span style="font-size:13px; color:#e2bfb2;">LangGraph Orchestrator</span>
+                <span style="display:flex; align-items:center; gap:6px; font-size:12px; color:#10b981;">
+                  <span style="width:6px; height:6px; border-radius:50%; background:#10b981; box-shadow:0 0 6px #10b981;"></span>
+                  Ativo
+                </span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
 
     </main>
   </div>
@@ -563,6 +813,64 @@ tailwind.config = {
 </div>
 
 
+<!-- ── MODAL: ADICIONAR MCP SERVER ── -->
+<div id="mcp-modal" class="modal-overlay">
+  <div class="glass-modal modal-content" style="width:100%;max-width:480px;border-radius:20px;padding:2rem;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.75rem;">
+      <div>
+        <h3 style="font-family:'Outfit',sans-serif;font-size:1.25rem;font-weight:700;margin-bottom:0.25rem;">Adicionar Servidor MCP</h3>
+        <p style="font-size:13px;color:#e2bfb2;opacity:0.8;">Configure um novo Model Context Protocol para o tenant</p>
+      </div>
+      <button onclick="closeModal('mcp-modal')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#e2bfb2;">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+      </button>
+    </div>
+    <form id="mcp-form" onsubmit="createMcpServer(event)">
+      <div style="margin-bottom:1.25rem;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#e2bfb2;margin-bottom:0.5rem;">Nome do Servidor</label>
+        <input type="text" id="mcp-name" required placeholder="ex: postgres-db" style="
+          width:100%;padding:0.7rem 1rem;border-radius:10px;
+          border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);
+          color:#e5e2e3;font-family:'Inter',sans-serif;font-size:14px;outline:none;
+        "/>
+      </div>
+      <div style="margin-bottom:1.25rem;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#e2bfb2;margin-bottom:0.5rem;">Comando de Execução</label>
+        <input type="text" id="mcp-command" required placeholder="ex: npx" style="
+          width:100%;padding:0.7rem 1rem;border-radius:10px;
+          border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);
+          color:#e5e2e3;font-family:'Inter',sans-serif;font-size:14px;outline:none;
+        "/>
+      </div>
+      <div style="margin-bottom:1.25rem;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#e2bfb2;margin-bottom:0.5rem;">Argumentos (separados por vírgula)</label>
+        <input type="text" id="mcp-args" placeholder="ex: -y, @modelcontextprotocol/server-postgres, --db-url" style="
+          width:100%;padding:0.7rem 1rem;border-radius:10px;
+          border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);
+          color:#e5e2e3;font-family:'Inter',sans-serif;font-size:14px;outline:none;
+        "/>
+      </div>
+      <div style="margin-bottom:1.75rem;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#e2bfb2;margin-bottom:0.5rem;">Variáveis de Ambiente (JSON)</label>
+        <textarea id="mcp-env" rows="3" placeholder='ex: {"DATABASE_URL": "postgresql://..."}' style="
+          width:100%;padding:0.7rem 1rem;border-radius:10px;
+          border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);
+          color:#e5e2e3;font-family:'Inter',sans-serif;font-size:14px;outline:none;
+          font-family:monospace;resize:vertical;
+        "></textarea>
+      </div>
+      <button type="submit" class="gradient-bg primary-glow" style="
+        width:100%;padding:0.85rem;border-radius:10px;border:none;
+        color:#4f1700;font-family:'Outfit',sans-serif;font-weight:700;
+        font-size:15px;cursor:pointer;
+      ">
+        Adicionar Servidor
+      </button>
+    </form>
+  </div>
+</div>
+
+
 <!-- ── TOAST ── -->
 <div id="toast">
   <span class="material-symbols-outlined" id="toast-icon" style="font-size:20px;flex-shrink:0;">check_circle</span>
@@ -579,6 +887,14 @@ tailwind.config = {
 
 <script>
   let masterKey = localStorage.getItem('master_key') || '';
+  let activeTab = 'overview';
+  
+  // Instâncias dos gráficos para evitar erros de renderização dupla
+  let chartActivity = null;
+  let chartPlan = null;
+  let chartUsage = null;
+  let chartStages = null;
+
   if (masterKey) loginWithKey(masterKey);
 
   async function login() {
@@ -595,10 +911,9 @@ tailwind.config = {
         localStorage.setItem('master_key', key);
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('app').style.display = 'block';
-        const stats = await res.json();
-        document.getElementById('stat-total').innerText = stats.total_tenants;
-        document.getElementById('stat-active').innerText = stats.active_tenants;
-        loadTenants();
+        
+        // Carrega dados da aba atual
+        switchTab(activeTab);
         showToast('Login efetuado com sucesso', 'success');
       } else {
         showToast('Master Key inválida', 'error');
@@ -629,6 +944,120 @@ tailwind.config = {
     return res.json();
   }
 
+  // --- CONTROLE DE ABAS ---
+  function switchTab(tabId, event) {
+    if (event) event.preventDefault();
+    activeTab = tabId;
+    
+    // Ocultar todas as seções e desativar todos os botões do sidebar
+    document.querySelectorAll('.tab-section').forEach(sec => sec.style.display = 'none');
+    document.querySelectorAll('nav a').forEach(a => {
+      a.className = 'sidebar-item';
+      a.style.borderRightColor = 'transparent';
+      a.style.color = '#e2bfb2';
+      a.style.opacity = '0.7';
+    });
+    
+    // Mostrar a seção atual e ativar o link correspondente
+    const targetSection = document.getElementById(`sec-${tabId}`);
+    if (targetSection) targetSection.style.display = 'block';
+    
+    const targetLink = document.getElementById(`tab-link-${tabId}`);
+    if (targetLink) {
+      targetLink.className = 'sidebar-item-active';
+      targetLink.style.color = '#ffb599';
+      targetLink.style.opacity = '1';
+    }
+    
+    // Carregar dados específicos da aba
+    if (tabId === 'overview') {
+      loadOverviewData();
+    } else if (tabId === 'tenants') {
+      loadTenants();
+    } else if (tabId === 'agents') {
+      loadAgentsData();
+    } else if (tabId === 'metrics') {
+      loadMetricsData();
+    } else if (tabId === 'integrations') {
+      loadIntegrationsData();
+    }
+  }
+
+  // --- ABA 1: VISÃO GERAL ---
+  async function loadOverviewData() {
+    try {
+      const stats = await api('/stats');
+      
+      document.getElementById('stat-total').innerText = stats.total_tenants || 0;
+      document.getElementById('stat-active').innerText = stats.active_tenants || 0;
+      document.getElementById('stat-leads').innerText = stats.total_leads || 0;
+      document.getElementById('stat-messages').innerText = stats.total_messages || 0;
+
+      // Destruir gráficos anteriores se existirem
+      if (chartActivity) chartActivity.destroy();
+      if (chartPlan) chartPlan.destroy();
+
+      // Renderizar Gráfico de Atividade Global (Linha do tempo)
+      const ctxActivity = document.getElementById('chart-global-activity').getContext('2d');
+      chartActivity = new Chart(ctxActivity, {
+        type: 'line',
+        data: {
+          labels: stats.activity_history?.labels || ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+          datasets: [{
+            label: 'Mensagens Trafegadas',
+            data: stats.activity_history?.data || [0, 0, 0, 0, 0, 0, 0],
+            borderColor: '#f66018',
+            backgroundColor: 'rgba(246, 96, 24, 0.1)',
+            tension: 0.4,
+            fill: true,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#a98a7e' } },
+            x: { grid: { display: false }, ticks: { color: '#a98a7e' } }
+          }
+        }
+      });
+
+      // Renderizar Gráfico de Distribuição de Planos (Donut)
+      const ctxPlan = document.getElementById('chart-plan-distribution').getContext('2d');
+      const planKeys = Object.keys(stats.plan_distribution || {});
+      const planValues = Object.values(stats.plan_distribution || {});
+      
+      chartPlan = new Chart(ctxPlan, {
+        type: 'doughnut',
+        data: {
+          labels: planKeys.map(k => k.toUpperCase()) || ['BASIC', 'PRO', 'ENTERPRISE'],
+          datasets: [{
+            data: planValues || [0, 0, 0],
+            backgroundColor: ['#a98a7e', '#d2bbff', '#ffb599'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#e5e2e3', font: { family: 'Inter', size: 11 } }
+            }
+          },
+          cutout: '70%'
+        }
+      });
+
+    } catch (err) {
+      showToast('Erro ao carregar dados da visão geral: ' + err.message, 'error');
+    }
+  }
+
+  // --- ABA 2: TENANTS ---
   const PLAN_LABELS = { basic: 'Basic', pro: 'Pro', enterprise: 'Enterprise' };
   const PLAN_STYLES = {
     basic: 'background:rgba(169,138,126,0.12);color:#e2bfb2;border:1px solid rgba(169,138,126,0.3);',
@@ -724,6 +1153,7 @@ tailwind.config = {
     document.getElementById(id).classList.remove('active');
     if (id === 'create-modal') document.getElementById('create-form').reset();
     if (id === 'config-modal') document.getElementById('config-form').reset();
+    if (id === 'mcp-modal') document.getElementById('mcp-form').reset();
   }
 
   async function createTenant(e) {
@@ -738,7 +1168,7 @@ tailwind.config = {
       await api('/tenants', { method: 'POST', body: JSON.stringify(data) });
       closeModal('create-modal');
       showToast('Tenant criado com sucesso!', 'success');
-      loginWithKey(masterKey);
+      loadTenants();
     } catch (err) {
       showToast(err.message, 'error');
     }
@@ -748,7 +1178,7 @@ tailwind.config = {
     try {
       await api(`/tenants/${id}`, { method: 'PATCH', body: JSON.stringify({ is_active: newState }) });
       showToast(newState ? 'Tenant ativado' : 'Tenant desativado', 'success');
-      loginWithKey(masterKey);
+      loadTenants();
     } catch (err) {
       showToast(err.message, 'error');
     }
@@ -781,6 +1211,363 @@ tailwind.config = {
       showToast('Configurações salvas!', 'success');
     } catch (err) {
       showToast(err.message, 'error');
+    }
+  }
+
+  // --- ABA 3: AGENTES IA & SANDBOX ---
+  async function loadAgentsData() {
+    try {
+      // Carrega resumo de agentes do backend
+      const agents = await api('/agents-summary');
+      const tbody = document.getElementById('agents-table-body');
+      tbody.innerHTML = '';
+      
+      const select = document.getElementById('sandbox-tenant-select');
+      select.innerHTML = '';
+
+      if (!agents || agents.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="padding:2rem;text-align:center;color:#a98a7e;">Nenhum agente IA ativo no momento.</td></tr>`;
+        return;
+      }
+
+      agents.forEach(a => {
+        // Tabela de agentes
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(255,255,255,0.04)';
+        tr.innerHTML = `
+          <td style="padding:0.75rem 0.5rem;font-weight:600;font-size:13px;">${a.tenant_name}</td>
+          <td style="padding:0.75rem 0.5rem;font-size:12px;font-family:monospace;color:#d2bbff;">${a.llm_model || 'Padrão Plano'}</td>
+          <td style="padding:0.75rem 0.5rem;font-size:12px;font-family:monospace;color:#ffb599;">${a.temperature !== undefined ? a.temperature : '0.3'}</td>
+          <td style="padding:0.75rem 0.5rem;text-align:right;">
+            <button onclick="openConfigModal(${a.tenant_id})" class="gradient-bg" style="padding:3px 8px;font-size:10px;font-weight:700;border-radius:6px;border:none;color:#4f1700;cursor:pointer;">Configurar</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+
+        // Preenche o select do Sandbox
+        const option = document.createElement('option');
+        option.value = a.tenant_id;
+        option.text = a.tenant_name;
+        select.appendChild(option);
+      });
+
+    } catch (err) {
+      showToast('Erro ao carregar agentes: ' + err.message, 'error');
+    }
+  }
+
+  async function sendSandboxMessage() {
+    const input = document.getElementById('sandbox-chat-input');
+    const message = input.value.trim();
+    if (!message) return;
+
+    const tenantId = document.getElementById('sandbox-tenant-select').value;
+    if (!tenantId) {
+      showToast('Por favor, selecione uma empresa.', 'error');
+      return;
+    }
+
+    const chatContainer = document.getElementById('sandbox-chat-messages');
+    
+    // Adicionar mensagem do usuário no container
+    const userMsgDiv = document.createElement('div');
+    userMsgDiv.style.alignSelf = 'flex-end';
+    userMsgDiv.style.background = 'rgba(255, 181, 153, 0.15)';
+    userMsgDiv.style.border = '1px solid rgba(255, 181, 153, 0.3)';
+    userMsgDiv.style.color = '#e5e2e3';
+    userMsgDiv.style.padding = '0.6rem 0.8rem';
+    userMsgDiv.style.borderRadius = '12px 12px 0 12px';
+    userMsgDiv.style.maxWidth = '80%';
+    userMsgDiv.style.fontSize = '13px';
+    userMsgDiv.innerText = message;
+    chatContainer.appendChild(userMsgDiv);
+    
+    input.value = '';
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    // Balão de digitação simulado
+    const typingDiv = document.createElement('div');
+    typingDiv.style.alignSelf = 'flex-start';
+    typingDiv.style.background = 'rgba(255, 255, 255, 0.05)';
+    typingDiv.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+    typingDiv.style.color = '#a98a7e';
+    typingDiv.style.padding = '0.6rem 0.8rem';
+    typingDiv.style.borderRadius = '12px 12px 12px 0';
+    typingDiv.style.maxWidth = '80%';
+    typingDiv.style.fontSize = '13px';
+    typingDiv.innerText = 'Digitando...';
+    chatContainer.appendChild(typingDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    try {
+      const response = await api(`/tenants/${tenantId}/chat-sandbox`, {
+        method: 'POST',
+        body: JSON.stringify({ message: message })
+      });
+
+      // Remove balão "Digitando..."
+      chatContainer.removeChild(typingDiv);
+
+      // Adiciona resposta do Agente
+      const botMsgDiv = document.createElement('div');
+      botMsgDiv.style.alignSelf = 'flex-start';
+      botMsgDiv.style.background = 'rgba(210, 187, 255, 0.1)';
+      botMsgDiv.style.border = '1px solid rgba(210, 187, 255, 0.2)';
+      botMsgDiv.style.color = '#e5e2e3';
+      botMsgDiv.style.padding = '0.6rem 0.8rem';
+      botMsgDiv.style.borderRadius = '12px 12px 12px 0';
+      botMsgDiv.style.maxWidth = '80%';
+      botMsgDiv.style.fontSize = '13px';
+      botMsgDiv.innerText = response.reply || 'Sem resposta do robô.';
+      chatContainer.appendChild(botMsgDiv);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    } catch (err) {
+      chatContainer.removeChild(typingDiv);
+      showToast('Erro na simulação do agente: ' + err.message, 'error');
+    }
+  }
+
+  // --- ABA 4: METRICAS & PERFORMANCE ---
+  async function loadMetricsData() {
+    try {
+      const data = await api('/analytics/usage');
+      
+      document.getElementById('metric-latency').innerText = data.avg_latency || '—';
+      document.getElementById('metric-conversion').innerText = data.conversion_rate || '—';
+      document.getElementById('metric-cost').innerText = data.estimated_cost || '—';
+
+      if (chartUsage) chartUsage.destroy();
+      if (chartStages) chartStages.destroy();
+
+      // Renderizar Gráfico de Barras (Ranking de volume de mensagens por tenant)
+      const ctxUsage = document.getElementById('chart-metrics-usage').getContext('2d');
+      chartUsage = new Chart(ctxUsage, {
+        type: 'bar',
+        data: {
+          labels: data.usage_ranking?.labels || [],
+          datasets: [{
+            data: data.usage_ranking?.data || [],
+            backgroundColor: '#d2bbff',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#a98a7e' } },
+            x: { grid: { display: false }, ticks: { color: '#a98a7e' } }
+          }
+        }
+      });
+
+      // Renderizar Gráfico Donut (Distribuição de estágios do Lead)
+      const ctxStages = document.getElementById('chart-metrics-stages').getContext('2d');
+      chartStages = new Chart(ctxStages, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(data.stage_distribution || {}),
+          datasets: [{
+            data: Object.values(data.stage_distribution || {}),
+            backgroundColor: ['#ffb1c7', '#d2bbff', '#ffb599', '#10b981'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#e5e2e3', font: { family: 'Inter', size: 10 } }
+            }
+          },
+          cutout: '70%'
+        }
+      });
+
+    } catch (err) {
+      showToast('Erro ao carregar métricas: ' + err.message, 'error');
+    }
+  }
+
+  // --- ABA 5: INTEGRAÇÕES & MCP ---
+  async function loadIntegrationsData() {
+    try {
+      const tenants = await api('/tenants');
+      const select = document.getElementById('integrations-tenant-select');
+      select.innerHTML = '';
+      
+      if (!tenants || tenants.length === 0) {
+        select.innerHTML = '<option value="">Nenhum tenant</option>';
+        return;
+      }
+
+      tenants.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.text = t.name || t.slug;
+        select.appendChild(opt);
+      });
+
+      // Carrega integrações do primeiro tenant selecionado
+      loadTenantIntegrations();
+
+    } catch (err) {
+      showToast('Erro ao listar tenants nas integrações: ' + err.message, 'error');
+    }
+  }
+
+  async function loadTenantIntegrations() {
+    const tenantId = document.getElementById('integrations-tenant-select').value;
+    if (!tenantId) return;
+
+    try {
+      // 1. Carrega config WhatsApp do Tenant
+      const cfg = await api(`/tenants/${tenantId}/agent-config`);
+      // WhatsApp config salvas no config JSON do tenant
+      const tenantData = allTenants.find(t => t.id == tenantId) || {};
+      
+      // O backend pode retornar whatsapp configs na API
+      document.getElementById('int-wa-url').value = cfg.whatsapp_server_url || '';
+      document.getElementById('int-wa-token').value = cfg.whatsapp_token || '';
+      document.getElementById('int-wa-instance').value = cfg.whatsapp_instance_name || '';
+
+      // 2. Carrega Servidores MCP do Tenant
+      loadMcpServers(tenantId);
+
+    } catch (err) {
+      showToast('Erro ao carregar integrações do tenant: ' + err.message, 'error');
+    }
+  }
+
+  async function loadMcpServers(tenantId) {
+    const tbody = document.getElementById('mcp-servers-body');
+    tbody.innerHTML = '<tr><td colspan="3" style="padding:1rem;text-align:center;color:#a98a7e;">Carregando MCP...</td></tr>';
+    
+    try {
+      const servers = await api(`/tenants/${tenantId}/mcp-servers`);
+      tbody.innerHTML = '';
+      
+      if (!servers || servers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="padding:1rem;text-align:center;color:#a98a7e;">Nenhum servidor MCP configurado.</td></tr>';
+        return;
+      }
+
+      servers.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
+        tr.innerHTML = `
+          <td style="padding:0.75rem 0.5rem;font-size:13px;font-weight:600;">${s.name}</td>
+          <td style="padding:0.75rem 0.5rem;font-size:12px;font-family:monospace;color:#a98a7e;">${s.command}</td>
+          <td style="padding:0.75rem 0.5rem;text-align:right;">
+            <button onclick="deleteMcpServer(${tenantId}, ${s.id})" class="sidebar-item" style="border:none;background:transparent;cursor:pointer;color:#ef4444;opacity:0.8;display:inline-flex;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">
+              <span class="material-symbols-outlined" style="font-size:18px;">delete</span>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="3" style="padding:1rem;text-align:center;color:#ef4444;">Erro ao carregar MCP.</td></tr>';
+    }
+  }
+
+  async function saveWhatsAppConfig(e) {
+    e.preventDefault();
+    const tenantId = document.getElementById('integrations-tenant-select').value;
+    if (!tenantId) return;
+
+    const data = {
+      whatsapp_server_url: document.getElementById('int-wa-url').value || null,
+      whatsapp_token: document.getElementById('int-wa-token').value || null,
+      whatsapp_instance_name: document.getElementById('int-wa-instance').value || null
+    };
+
+    try {
+      await api(`/tenants/${tenantId}/agent-config`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      });
+      showToast('Configurações do WhatsApp salvas!', 'success');
+      loadTenantIntegrations();
+    } catch (err) {
+      showToast('Erro ao salvar WhatsApp: ' + err.message, 'error');
+    }
+  }
+
+  function openMcpModal() {
+    document.getElementById('mcp-modal').classList.add('active');
+  }
+
+  async function createMcpServer(e) {
+    e.preventDefault();
+    const tenantId = document.getElementById('integrations-tenant-select').value;
+    if (!tenantId) return;
+
+    let env = {};
+    try {
+      const envVal = document.getElementById('mcp-env').value.trim();
+      if (envVal) env = JSON.parse(envVal);
+    } catch (err) {
+      showToast('Variáveis de ambiente devem estar em formato JSON válido.', 'error');
+      return;
+    }
+
+    const argsVal = document.getElementById('mcp-args').value.trim();
+    const args = argsVal ? argsVal.split(',').map(a => a.trim()) : [];
+
+    const data = {
+      name: document.getElementById('mcp-name').value,
+      command: document.getElementById('mcp-command').value,
+      args: args,
+      env: env
+    };
+
+    try {
+      await api(`/tenants/${tenantId}/mcp-servers`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+      closeModal('mcp-modal');
+      showToast('Servidor MCP adicionado!', 'success');
+      loadMcpServers(tenantId);
+    } catch (err) {
+      showToast('Erro ao criar servidor MCP: ' + err.message, 'error');
+    }
+  }
+
+  async function deleteMcpServer(tenantId, serverId) {
+    if (!confirm('Deseja realmente excluir este servidor MCP?')) return;
+    try {
+      await api(`/tenants/${tenantId}/mcp-servers/${serverId}`, { method: 'DELETE' });
+      showToast('Servidor MCP removido', 'success');
+      loadMcpServers(tenantId);
+    } catch (err) {
+      showToast('Erro ao remover: ' + err.message, 'error');
+    }
+  }
+
+  // --- ABA 6: CONFIGURAÇÕES GERAIS ---
+  async function changeMasterKey(e) {
+    e.preventDefault();
+    const newKey = document.getElementById('set-new-key').value;
+    if (!newKey) return;
+
+    try {
+      // Chama rota de alteração de chave
+      await api('/settings/change-key', {
+        method: 'POST',
+        body: JSON.stringify({ new_key: newKey })
+      });
+      masterKey = newKey;
+      localStorage.setItem('master_key', newKey);
+      document.getElementById('set-new-key').value = '';
+      showToast('Master Key atualizada com sucesso!', 'success');
+    } catch (err) {
+      showToast('Erro ao atualizar Master Key: ' + err.message, 'error');
     }
   }
 
