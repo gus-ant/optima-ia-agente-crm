@@ -81,3 +81,44 @@ def test_master_tenants_crud(client):
     response = client.get(f"/api/master/tenants/{tenant_id}/agent-config", headers=HEADERS)
     config = response.json()
     assert config["llm_model"] == "gpt-4"
+
+def test_master_agents_summary(client):
+    # Create a tenant first
+    payload = {
+        "slug": "test-agent-summary",
+        "name": "Test Agent Summary",
+        "plan": "pro"
+    }
+    client.post("/api/master/tenants", json=payload, headers=HEADERS)
+    
+    # Get agents summary
+    response = client.get("/api/master/agents-summary", headers=HEADERS)
+    assert response.status_code == 200
+    agents = response.json()
+    assert len(agents) > 0
+    assert any(a["tenant_name"] == "Test Agent Summary" for a in agents)
+
+def test_master_analytics_usage(client):
+    response = client.get("/api/master/analytics/usage", headers=HEADERS)
+    assert response.status_code == 200
+    data = response.json()
+    assert "avg_latency" in data
+    assert "conversion_rate" in data
+    assert "usage_ranking" in data
+
+def test_master_settings_change_key(client):
+    # Change key
+    new_key = "brand_new_secret_key"
+    response = client.post("/api/master/settings/change-key", json={"new_key": new_key}, headers=HEADERS)
+    assert response.status_code == 200
+    
+    # Try calling endpoint with old key (should fail)
+    response = client.get("/api/master/stats", headers=HEADERS)
+    assert response.status_code == 403
+    
+    # Try calling endpoint with new key (should pass)
+    response = client.get("/api/master/stats", headers={"X-Master-Key": new_key})
+    assert response.status_code == 200
+    
+    # Restore key for subsequent tests
+    client.post("/api/master/settings/change-key", json={"new_key": MASTER_KEY}, headers={"X-Master-Key": new_key})
